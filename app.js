@@ -34,6 +34,20 @@ function renderProducts(filter='all') {
   requestAnimationFrame(()=>{ updateCatalogMetrics(); window.dispatchEvent(new Event('scroll')); });
 }
 
+function renderProductStory() {
+  $('#storyCards').innerHTML=products.map((p,i)=>`
+    <article class="story-card${i===0?' is-current':''}" data-story-index="${i}">
+      <span class="story-number" aria-hidden="true">${String(i+1).padStart(2,'0')}</span>
+      <div class="story-object" aria-hidden="true">${p.icon}</div>
+      <div class="story-copy">
+        <p class="eyebrow">Case ${String(i+1).padStart(2,'0')} · ${p.category}</p>
+        <h2>${p.name}<em>${p.category==='origami'?'One sheet. A lot of personality.':p.category==='crochet'?'Soft, useful, and made by hand.':'Your face. Our funniest lines.'}</em></h2>
+        <p>${p.blurb}</p><span class="story-price">${p.price}</span>
+      </div>
+    </article>`).join('');
+  $('#storyRail').innerHTML=products.map((p,i)=>`<button class="story-dot${i===0?' is-current':''}" type="button" data-story-jump="${i}" aria-label="Show ${p.name}"></button>`).join('');
+}
+
 function togglePick(id) {
   const index = state.picks.indexOf(id);
   if (index >= 0) { state.picks.splice(index,1); toast('Removed from your picks'); }
@@ -223,7 +237,7 @@ function setupScrollExperience() {
     intro.style.setProperty('--orb-ink-x',`${4*(1-introEnter)-introGather*38}vw`);
     intro.style.setProperty('--orb-ink-y',`${Math.cos(introProgress*8)*10-introGather*4}vh`);
     intro.style.setProperty('--orb-ink-r',`${19-introProgress*70}deg`);
-    intro.style.setProperty('--intro-material-opacity',`${1-Math.max(0,(introProgress-.58)/.17)}`);
+    intro.style.setProperty('--intro-material-opacity',`${1-Math.min(1,Math.max(0,(introProgress-.58)/.17))}`);
     intro.style.setProperty('--intro-portal-scale',`${.05+introReveal*13}`);
     intro.style.setProperty('--intro-portal-opacity',`${introReveal}`);
     intro.style.setProperty('--intro-reveal-opacity',`${introReveal*(1-introFade)}`);
@@ -238,6 +252,35 @@ function setupScrollExperience() {
     hero.style.setProperty('--hero-logo-scale', `${1 - heroProgress * .055}`);
     hero.style.setProperty('--hero-copy-y', `${heroProgress * 34}px`);
 
+    const story=$('.product-story');
+    const storyRect=story.getBoundingClientRect();
+    const storyDistance=Math.max(1,story.offsetHeight-window.innerHeight);
+    const storyProgress=Math.max(0,Math.min(1,-storyRect.top/storyDistance));
+    const storyPosition=storyProgress*(products.length-1);
+    const storyIndex=Math.max(0,Math.min(products.length-1,Math.round(storyPosition)));
+    const storyActive=storyRect.top<68&&storyRect.bottom>68;
+    const storyStage=$('.story-stage');
+    const accent=products[storyIndex].category==='crochet'?'#ffb28e':products[storyIndex].category==='art'?'#f4f0e7':'#ee672d';
+    storyStage.style.setProperty('--story-accent',accent);
+    storyStage.style.setProperty('--story-grid-x',`${storyProgress*-90}px`);
+    storyStage.style.setProperty('--story-grid-y',`${storyProgress*-55}px`);
+    storyStage.style.setProperty('--story-ring-scale',`${.72+Math.sin(storyPosition*Math.PI)*.08}`);
+    storyStage.style.setProperty('--story-core-scale',`${.1+Math.abs(Math.sin(storyPosition*Math.PI))*.22}`);
+    $$('.story-card').forEach((card,i)=>{
+      const distance=i-storyPosition,visibility=Math.max(0,1-Math.abs(distance)*1.45);
+      card.style.opacity=visibility;
+      card.style.transform=`translate3d(0,${distance*64}vh,0) scale(${.82+visibility*.18}) rotate(${distance*2.5}deg)`;
+      card.style.zIndex=String(10-Math.round(Math.abs(distance)));
+      card.classList.toggle('is-current',i===storyIndex);
+      const object=$('.story-object',card);
+      object.style.setProperty('--story-object-x',`${distance*-12}vw`);
+      object.style.setProperty('--story-object-y',`${distance*9}vh`);
+      object.style.setProperty('--story-object-r',`${distance*-24}deg`);
+      object.style.setProperty('--story-object-scale',`${.82+visibility*.18}`);
+    });
+    $$('.story-dot').forEach((dot,i)=>dot.classList.toggle('is-current',i===storyIndex));
+    $('#storyCounter').textContent=`${String(storyIndex+1).padStart(2,'0')} / ${String(products.length).padStart(2,'0')}`;
+
     const catalog = $('.catalog');
     const catalogRect = catalog.getBoundingClientRect();
     const catalogDistance=Math.max(1,catalog.offsetHeight-window.innerHeight);
@@ -251,7 +294,7 @@ function setupScrollExperience() {
 
     const transition=$('.case-transition');
     const transitionRect=transition.getBoundingClientRect();
-    $('.site-header').classList.toggle('dark-scene',catalogProgress>.985&&transitionRect.bottom>68);
+    $('.site-header').classList.toggle('dark-scene',storyActive||(catalogProgress>.985&&transitionRect.bottom>68));
     const transitionDistance=Math.max(1,transition.offsetHeight-window.innerHeight);
     const transitionProgress=Math.max(0,Math.min(1,-transitionRect.top/transitionDistance));
     const enter=1-Math.pow(1-Math.min(1,transitionProgress/.42),3);
@@ -282,7 +325,10 @@ function setupScrollExperience() {
   };
   window.addEventListener('scroll', () => { if (!ticking) { ticking=true; requestAnimationFrame(updateScroll); } }, { passive:true });
   window.addEventListener('resize',()=>{ updateCatalogMetrics(); updateScroll(); });
-  window.addEventListener('load',()=>requestAnimationFrame(updateScroll),{once:true});
+  window.addEventListener('load',()=>{
+    if (location.hash) setTimeout(()=>{ try { $(location.hash)?.scrollIntoView(); } catch (_) {} updateScroll(); },120);
+    requestAnimationFrame(updateScroll);
+  },{once:true});
   window.addEventListener('hashchange',()=>requestAnimationFrame(updateScroll));
   updateCatalogMetrics();
   updateScroll();
@@ -290,6 +336,7 @@ function setupScrollExperience() {
 }
 
 document.addEventListener('click', e => {
+  const storyJump=e.target.closest('[data-story-jump]'); if(storyJump){ const story=$('.product-story'),distance=story.offsetHeight-window.innerHeight,progress=Number(storyJump.dataset.storyJump)/(products.length-1); window.scrollTo({top:story.offsetTop+distance*progress,behavior:'smooth'}); }
   const orb=e.target.closest('[data-orb]'); if(orb){ $$('.material-orb').forEach(item=>item.classList.toggle('is-lit',item===orb)); toast(`${orb.dataset.orb} selected — keep scrolling to open the case`); }
   const clue=e.target.closest('[data-clue]'); if(clue) collectClue(clue.dataset.clue);
   const jump=e.target.closest('[data-jump]'); if(jump) $(jump.dataset.jump)?.scrollIntoView({behavior:'smooth'});
@@ -317,6 +364,6 @@ $('#huntAgainBtn').addEventListener('click',()=>{ state.clues=[];save();renderCl
 $('#clearDoneBtn').addEventListener('click',()=>{ const count=state.orders.filter(o=>o.status==='picked-up').length; if(count && confirm(`Clear ${count} picked-up order${count===1?'':'s'}?`)){ state.orders=state.orders.filter(o=>o.status!=='picked-up');save();renderOrders(); } });
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeDrawer(); closeClueBadge(); } });
 setInterval(updateClock,30000);
-renderProducts(); renderDrawer(); renderStaffProducts(); renderOrders(); renderClues(); updateClock();
+renderProducts(); renderProductStory(); renderDrawer(); renderStaffProducts(); renderOrders(); renderClues(); updateClock();
 setupScrollExperience();
 setupPlayfulInteractions();
