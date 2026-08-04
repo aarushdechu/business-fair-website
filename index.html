@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#171714" />
+    <meta name="description" content="Browse handmade origami, crochet creations, and personalized caricatures from A Sketchy Business." />
+    <title>A Sketchy Business — Handmade & hand-drawn</title>
+    <link rel="icon" href="assets/logo-mark.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Rock+Salt&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="app.js" defer></script>
+  </head>
+  <body>
+    <div class="noise" aria-hidden="true"></div>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="A Sketchy Business home">
+        <img src="assets/logo-mark.png" alt="" />
+        <span>A Sketchy Business</span>
+      </a>
+      <nav aria-label="Main navigation">
+        <a href="#case-files">The goods</a>
+        <a href="#how-it-works">How it works</a>
+        <button class="nav-staff" id="staffNavBtn" type="button">Staff board</button>
+      </nav>
+      <button class="case-button" id="caseButton" type="button" aria-label="Open your picks">
+        My picks <span id="caseCount">0</span>
+      </button>
+    </header>
+
+    <main id="storeView">
+      <section class="hero" id="top">
+        <img class="hero-art" src="assets/makers-hero.png" alt="Two young makers folding origami and drawing a caricature" />
+        <div class="hero-copy">
+          <p class="eyebrow"><span>Case file 001</span> Kids making cool stuff</p>
+          <h1>Something <em>sketchy</em><br />is going on.</h1>
+          <p class="hero-lede">Hand-folded creatures, cozy crochet, and one-of-a-kind caricatures—made by two young artists, right here at the fair.</p>
+          <div class="hero-actions">
+            <a class="button button-dark" href="#case-files">Investigate the goods <span>↘</span></a>
+            <a class="text-link" href="#how-it-works">How ordering works <span>→</span></a>
+          </div>
+          <div class="maker-note"><b>Made by hand.</b><br />No factories. No funny business.<br /><span>(Okay, a little funny business.)</span></div>
+        </div>
+      </section>
+
+      <section class="ticker" aria-label="What we make">
+        <div>ORIGAMI <span>✦</span> CARICATURES <span>✦</span> CROCHET <span>✦</span> MADE BY KIDS <span>✦</span> ORIGAMI <span>✦</span> CARICATURES</div>
+      </section>
+
+      <section class="catalog" id="case-files">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Evidence locker</p>
+            <h2>Pick your <em>favorite.</em></h2>
+          </div>
+          <p>Tap “Add to my picks” to make a list. Then show it to us at the stall—no online payment, no mystery.</p>
+        </div>
+        <div class="filter-row" role="group" aria-label="Filter products">
+          <button class="filter active" data-filter="all" type="button">All the goods</button>
+          <button class="filter" data-filter="origami" type="button">Origami</button>
+          <button class="filter" data-filter="crochet" type="button">Crochet</button>
+          <button class="filter" data-filter="art" type="button">Caricatures</button>
+        </div>
+        <div class="product-grid" id="productGrid"></div>
+      </section>
+
+      <section class="caricature-feature">
+        <div class="portrait-stack" aria-hidden="true">
+          <div class="portrait portrait-one">☺<span>Very serious<br />business person</span></div>
+          <div class="portrait portrait-two">☻<span>100% unique</span></div>
+        </div>
+        <div class="feature-copy">
+          <p class="eyebrow">The main suspect</p>
+          <h2>You, but <em>funnier.</em></h2>
+          <p>Sit for a quick portrait and we'll turn your best features into a totally unique caricature. We’ll take your name, give you an order number, and call you back when the masterpiece is ready.</p>
+          <button class="button button-orange quick-add" data-product="caricature" type="button">Add a caricature to my picks <span>＋</span></button>
+        </div>
+        <div class="feature-stamp">Drawn<br />on site!</div>
+      </section>
+
+      <section class="how" id="how-it-works">
+        <div class="section-heading compact">
+          <div><p class="eyebrow">The operation</p><h2>How it <em>works.</em></h2></div>
+        </div>
+        <div class="steps">
+          <article><span>01</span><div class="step-icon">⌕</div><h3>Browse the clues</h3><p>Look through everything here and add your favorites to “My picks.”</p></article>
+          <article><span>02</span><div class="step-icon">⌖</div><h3>Visit the stall</h3><p>Show us your list. We'll confirm what’s available and take your order.</p></article>
+          <article><span>03</span><div class="step-icon">✓</div><h3>Collect your treasure</h3><p>Take ready-made items now. For a caricature, watch the board for your order number.</p></article>
+        </div>
+      </section>
+
+      <section class="final-cta">
+        <img src="assets/logo.png" alt="A Sketchy Business" />
+        <div><p class="eyebrow">Mystery solved</p><h2>Found something<br /><em>you like?</em></h2><p>Save it to your picks and come find us at the fair.</p></div>
+        <button class="button button-orange" id="bottomPicksBtn" type="button">See my picks <span>→</span></button>
+      </section>
+    </main>
+
+    <main id="staffView" class="staff-view" hidden>
+      <section class="staff-top">
+        <button class="back-store" id="backStoreBtn" type="button">← Back to storefront</button>
+        <div class="staff-title"><p class="eyebrow">For makers' eyes only</p><h1>Order board</h1><p>Orders are saved on this device.</p></div>
+        <div class="staff-clock" id="staffClock"></div>
+      </section>
+      <section class="staff-stats" id="staffStats"></section>
+      <section class="staff-layout">
+        <form class="order-form" id="orderForm">
+          <div class="form-title"><span>＋</span><div><h2>New order</h2><p>Enter it at the stall.</p></div></div>
+          <label>Customer name<input id="customerName" name="customerName" autocomplete="off" required placeholder="e.g. Maya" /></label>
+          <fieldset><legend>What are they getting?</legend><div class="staff-products" id="staffProducts"></div></fieldset>
+          <label>Caricature notes <textarea id="orderNotes" name="notes" rows="3" placeholder="Glasses, favorite hobby, special request…"></textarea></label>
+          <button class="button button-orange full" type="submit">Create order <span>→</span></button>
+        </form>
+        <section class="orders-panel">
+          <div class="orders-toolbar"><div><p class="eyebrow">Live queue</p><h2>Today’s orders</h2></div><button class="clear-done" id="clearDoneBtn" type="button">Clear picked up</button></div>
+          <div class="order-filters" role="group" aria-label="Filter orders">
+            <button class="active" data-status="active" type="button">Active</button><button data-status="ready" type="button">Ready</button><button data-status="all" type="button">All</button>
+          </div>
+          <div class="orders-list" id="ordersList"></div>
+        </section>
+      </section>
+    </main>
+
+    <aside class="drawer" id="caseDrawer" aria-hidden="true" aria-labelledby="drawerTitle">
+      <div class="drawer-head"><div><p class="eyebrow">Your evidence bag</p><h2 id="drawerTitle">My picks</h2></div><button class="icon-button" id="closeDrawer" type="button" aria-label="Close">×</button></div>
+      <div class="drawer-items" id="drawerItems"></div>
+      <div class="drawer-foot">
+        <p><b>No payment needed here.</b> Show this list to us at the stall and we’ll create your order.</p>
+        <button class="button button-orange full" id="showAtStallBtn" type="button">I'm ready—show at stall <span>→</span></button>
+      </div>
+    </aside>
+    <div class="scrim" id="scrim" hidden></div>
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <footer><p>Handmade with paper, yarn &amp; questionable amounts of creativity.</p><a href="#top">Back to top ↑</a></footer>
+  </body>
+</html>
