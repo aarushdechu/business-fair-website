@@ -16,6 +16,12 @@
   <body>
     <div class="noise" aria-hidden="true"></div>
     <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+    <nav class="case-nav" id="caseNav" aria-label="Page sections">
+      <button class="active" data-jump="#top" type="button"><span>Intro</span></button>
+      <button data-jump="#case-files" type="button"><span>Goods</span></button>
+      <button data-jump="#how-it-works" type="button"><span>How it works</span></button>
+    </nav>
+    <button class="clue-hud" id="clueHud" type="button" aria-label="Secret case: 0 of 3 clues found"><span>⌕</span><b>Secret case</b><em><span id="clueCount">0</span>/3</em></button>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="A Sketchy Business home">
         <span class="brand-mark"><img src="assets/logo.png" alt="" /></span>
@@ -34,6 +40,7 @@
     <main id="storeView">
       <section class="hero" id="top">
         <img class="hero-art hero-logo" src="assets/logo.png" alt="A Sketchy Business logo" />
+        <button class="hidden-clue clue-hero" data-clue="spy-mark" type="button" aria-label="Hidden maker mark">✦</button>
         <div class="hero-copy">
           <p class="eyebrow"><span>Case file 001</span> Kids making cool stuff</p>
           <h1>Something <em>sketchy</em><br />is going on.</h1>
@@ -54,6 +61,7 @@
 
       <section class="catalog" id="case-files">
         <div class="catalog-watermark" aria-hidden="true">THE GOODS · THE GOODS ·</div>
+        <button class="hidden-clue clue-catalog" data-clue="paper-mark" type="button" aria-label="Hidden maker mark">⌁</button>
         <div class="section-heading">
           <div>
             <p class="eyebrow">Evidence locker</p>
@@ -85,6 +93,7 @@
       </section>
 
       <section class="how" id="how-it-works">
+        <button class="hidden-clue clue-how" data-clue="pencil-mark" type="button" aria-label="Hidden maker mark">✦</button>
         <div class="section-heading compact">
           <div><p class="eyebrow">The operation</p><h2>How it <em>works.</em></h2></div>
         </div>
@@ -137,6 +146,15 @@
     </aside>
     <div class="scrim" id="scrim" hidden></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="clue-overlay" id="clueOverlay" hidden>
+      <section class="clue-badge" role="dialog" aria-modal="true" aria-labelledby="clueTitle">
+        <button class="icon-button" id="closeClueBadge" type="button" aria-label="Close">×</button>
+        <span class="badge-icon">⌕</span><p class="eyebrow">Case cracked</p>
+        <h2 id="clueTitle">Junior Sketch<br /><em>Detective!</em></h2>
+        <p>You found all three secret maker marks. Show this badge at the stall and tell us which clue was trickiest.</p>
+        <button class="button button-orange" id="huntAgainBtn" type="button">Hunt again <span>↻</span></button>
+      </section>
+    </div>
     <footer><p>Handmade with paper, yarn &amp; questionable amounts of creativity.</p><a href="#top">Back to top ↑</a></footer>
   </body>
 </html>

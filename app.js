@@ -13,19 +13,20 @@ const products = [
 const state = {
   picks: JSON.parse(localStorage.getItem('sketchy-picks') || '[]'),
   orders: JSON.parse(localStorage.getItem('sketchy-orders') || '[]'),
+  clues: JSON.parse(localStorage.getItem('sketchy-clues') || '[]'),
   orderFilter: 'active'
 };
 let revealObserver;
 
 const $ = (selector, root=document) => root.querySelector(selector);
 const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
-const save = () => { localStorage.setItem('sketchy-picks', JSON.stringify(state.picks)); localStorage.setItem('sketchy-orders', JSON.stringify(state.orders)); };
+const save = () => { localStorage.setItem('sketchy-picks', JSON.stringify(state.picks)); localStorage.setItem('sketchy-orders', JSON.stringify(state.orders)); localStorage.setItem('sketchy-clues', JSON.stringify(state.clues)); };
 const productById = id => products.find(p => p.id === id);
 
 function renderProducts(filter='all') {
   $('#productGrid').innerHTML = products.map((p,i) => `
     <article class="product-card ${filter !== 'all' && p.category !== filter ? 'hidden' : ''}" data-category="${p.category}">
-      <div class="product-art"><span class="card-tag">File ${String(i+1).padStart(2,'0')} · ${p.category}</span><span class="emoji" aria-hidden="true">${p.icon}</span></div>
+      <div class="product-art"><span class="card-tag">File ${String(i+1).padStart(2,'0')} · ${p.category}</span><span class="emoji" aria-hidden="true">${p.icon}</span><span class="card-glint" aria-hidden="true"></span></div>
       <div class="card-body"><h3>${p.name}</h3><p>${p.blurb}</p><div class="card-bottom"><span class="price">${p.price}</span><button class="add-button ${state.picks.includes(p.id)?'added':''}" data-product="${p.id}" type="button" aria-label="${state.picks.includes(p.id)?`Remove ${p.name} from my picks`:`Add ${p.name} to my picks`}"><span class="add-label">${state.picks.includes(p.id)?'In my picks':'Add to picks'}</span><span class="add-icon" aria-hidden="true"><b class="icon-plus">＋</b><b class="icon-check">✓</b></span></button></div></div>
     </article>`).join('');
   if (revealObserver) requestAnimationFrame(() => observeReveals($('#productGrid')));
@@ -78,9 +79,71 @@ function renderOrders() {
   box.innerHTML=orders.map(o=>`<article class="order-card status-${o.status}"><div class="order-number"><div><small>ORDER</small><strong>#${o.number}</strong></div></div><div class="order-info"><h3>${escapeHtml(o.customer)}</h3><p><b>${o.items.map(id=>productById(id)?.name).filter(Boolean).join(' · ')}</b></p>${o.notes?`<p>Note: ${escapeHtml(o.notes)}</p>`:''}<p>${new Date(o.createdAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</p></div><div class="order-actions"><select data-order-status="${o.id}" aria-label="Status for order ${o.number}"><option value="received" ${o.status==='received'?'selected':''}>Received</option><option value="drawing" ${o.status==='drawing'?'selected':''}>Drawing</option><option value="ready" ${o.status==='ready'?'selected':''}>Ready!</option><option value="picked-up" ${o.status==='picked-up'?'selected':''}>Picked up</option></select><button class="delete-order" data-delete-order="${o.id}" aria-label="Delete order ${o.number}" type="button">×</button></div></article>`).join('');
 }
 function escapeHtml(value) { const d=document.createElement('div'); d.textContent=value; return d.innerHTML; }
-function showStaff() { closeDrawer(); $('#storeView').hidden=true; $('footer').hidden=true; $('#staffView').hidden=false; $('.site-header').hidden=true; window.scrollTo(0,0); renderOrders(); updateClock(); }
-function showStore() { $('#storeView').hidden=false; $('footer').hidden=false; $('#staffView').hidden=true; $('.site-header').hidden=false; window.scrollTo(0,0); }
+function showStaff() { closeDrawer(); $('#storeView').hidden=true; $('footer').hidden=true; $('#staffView').hidden=false; $('.site-header').hidden=true; $('#caseNav').hidden=true; $('#clueHud').hidden=true; window.scrollTo(0,0); renderOrders(); updateClock(); }
+function showStore() { $('#storeView').hidden=false; $('footer').hidden=false; $('#staffView').hidden=true; $('.site-header').hidden=false; $('#caseNav').hidden=false; $('#clueHud').hidden=false; window.scrollTo(0,0); }
 function updateClock() { const el=$('#staffClock'); if(el) el.textContent=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); }
+
+function renderClues() {
+  const count = state.clues.length;
+  $('#clueCount').textContent = count;
+  $('#clueHud').setAttribute('aria-label', `Secret case: ${count} of 3 clues found`);
+  $$('.hidden-clue').forEach(clue => {
+    const found = state.clues.includes(clue.dataset.clue);
+    clue.classList.toggle('found', found);
+    clue.textContent = found ? '✓' : clue.dataset.clue === 'paper-mark' ? '⌁' : '✦';
+    clue.setAttribute('aria-label', found ? 'Maker mark found' : 'Hidden maker mark');
+  });
+}
+
+function collectClue(id) {
+  if (state.clues.includes(id)) { toast('You already found this maker mark'); return; }
+  state.clues.push(id); save(); renderClues();
+  toast(`Clue found — ${state.clues.length}/3`);
+  if (state.clues.length === 3) setTimeout(showClueBadge, 350);
+}
+
+function showClueBadge() {
+  $('#clueOverlay').hidden = false;
+  document.body.style.overflow = 'hidden';
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const colors = ['#ee672d','#fff6a9','#b8bdaa','#ffd8be','#181816'];
+  for (let i=0;i<26;i++) {
+    const piece=document.createElement('i'); piece.className='confetti-piece';
+    piece.style.setProperty('--confetti-color', colors[i%colors.length]);
+    piece.style.setProperty('--confetti-x', `${Math.round((Math.random()-.5)*650)}px`);
+    piece.style.setProperty('--confetti-y', `${Math.round((Math.random()-.55)*500)}px`);
+    piece.style.setProperty('--confetti-r', `${Math.round((Math.random()-.5)*800)}deg`);
+    piece.style.animationDelay=`${i*13}ms`; document.body.appendChild(piece);
+    piece.addEventListener('animationend',()=>piece.remove());
+  }
+}
+function closeClueBadge() { $('#clueOverlay').hidden=true; document.body.style.overflow=''; }
+
+function setupPlayfulInteractions() {
+  const finePointer = window.matchMedia('(pointer:fine)').matches;
+  if (finePointer) {
+    $('#productGrid').addEventListener('pointermove', e => {
+      const card=e.target.closest('.product-card'); if(!card) return;
+      const rect=card.getBoundingClientRect(); const x=(e.clientX-rect.left)/rect.width-.5; const y=(e.clientY-rect.top)/rect.height-.5;
+      card.classList.add('is-tilting');
+      card.style.transform=`perspective(850px) rotateX(${y*-5.5}deg) rotateY(${x*7}deg) translateY(-5px)`;
+      card.style.setProperty('--glint-x',`${(x+.5)*100}%`); card.style.setProperty('--glint-y',`${(y+.5)*100}%`);
+    });
+    $('#productGrid').addEventListener('pointerout', e => {
+      const card=e.target.closest('.product-card'); if(!card || card.contains(e.relatedTarget)) return;
+      card.classList.remove('is-tilting'); card.style.transform='';
+    });
+
+    $$('.maker-note').forEach(note => note.addEventListener('pointerdown', e => {
+      e.preventDefault(); const parent=note.parentElement; const noteRect=note.getBoundingClientRect(); const parentRect=parent.getBoundingClientRect();
+      const startX=e.clientX,startY=e.clientY,startLeft=noteRect.left-parentRect.left,startTop=noteRect.top-parentRect.top;
+      note.style.left=`${startLeft}px`; note.style.top=`${startTop}px`; note.style.right='auto'; note.style.bottom='auto'; note.classList.add('dragging'); note.setPointerCapture(e.pointerId);
+      const move=ev=>{ const maxX=window.innerWidth-parentRect.left-note.offsetWidth-18,maxY=parent.offsetHeight-note.offsetHeight; note.style.left=`${Math.max(0,Math.min(maxX,startLeft+ev.clientX-startX))}px`; note.style.top=`${Math.max(0,Math.min(maxY,startTop+ev.clientY-startY))}px`; };
+      const up=()=>{ note.classList.remove('dragging'); note.removeEventListener('pointermove',move); note.removeEventListener('pointerup',up); note.removeEventListener('pointercancel',up); };
+      note.addEventListener('pointermove',move); note.addEventListener('pointerup',up); note.addEventListener('pointercancel',up);
+    }));
+  }
+}
 
 function observeReveals(root=document) {
   const targets = $$('.product-card, .section-heading, .filter-row, .portrait-stack, .feature-copy, .steps article, .final-cta > *', root);
@@ -122,6 +185,10 @@ function setupScrollExperience() {
     $('#scrollProgress').style.transform = `scaleX(${Math.min(1,y/max)})`;
     $('.site-header').classList.toggle('scrolled', y > 24);
     revealVisible();
+    const sectionIds=['#top','#case-files','#how-it-works'];
+    let activeId='#top';
+    sectionIds.forEach(id => { if ($(id).getBoundingClientRect().top < window.innerHeight*.42) activeId=id; });
+    $$('#caseNav [data-jump]').forEach(button => button.classList.toggle('active',button.dataset.jump===activeId));
 
     const hero = $('.hero');
     const heroProgress = Math.min(1, Math.max(0, y / Math.max(1,hero.offsetHeight)));
@@ -152,6 +219,8 @@ function setupScrollExperience() {
 }
 
 document.addEventListener('click', e => {
+  const clue=e.target.closest('[data-clue]'); if(clue) collectClue(clue.dataset.clue);
+  const jump=e.target.closest('[data-jump]'); if(jump) $(jump.dataset.jump)?.scrollIntoView({behavior:'smooth'});
   const add=e.target.closest('[data-product]'); if(add) togglePick(add.dataset.product);
   const remove=e.target.closest('[data-remove]'); if(remove) togglePick(remove.dataset.remove);
   const filter=e.target.closest('[data-filter]'); if(filter){ $$('.filter').forEach(b=>b.classList.toggle('active',b===filter)); renderProducts(filter.dataset.filter); }
@@ -170,8 +239,12 @@ $('#orderForm').addEventListener('submit', e => {
 $('#caseButton').addEventListener('click',openDrawer); $('#bottomPicksBtn').addEventListener('click',openDrawer); $('#closeDrawer').addEventListener('click',closeDrawer); $('#scrim').addEventListener('click',closeDrawer);
 $('#staffNavBtn').addEventListener('click',showStaff); $('#backStoreBtn').addEventListener('click',showStore);
 $('#showAtStallBtn').addEventListener('click',()=>{ toast('Show this screen to us at the stall!'); });
+$('#clueHud').addEventListener('click',()=> state.clues.length===3 ? showClueBadge() : toast(`${3-state.clues.length} secret maker mark${3-state.clues.length===1?'':'s'} still hiding…`));
+$('#closeClueBadge').addEventListener('click',closeClueBadge); $('#clueOverlay').addEventListener('click',e=>{ if(e.target===$('#clueOverlay')) closeClueBadge(); });
+$('#huntAgainBtn').addEventListener('click',()=>{ state.clues=[];save();renderClues();closeClueBadge();toast('The secret case is open again'); });
 $('#clearDoneBtn').addEventListener('click',()=>{ const count=state.orders.filter(o=>o.status==='picked-up').length; if(count && confirm(`Clear ${count} picked-up order${count===1?'':'s'}?`)){ state.orders=state.orders.filter(o=>o.status!=='picked-up');save();renderOrders(); } });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeDrawer(); });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeDrawer(); closeClueBadge(); } });
 setInterval(updateClock,30000);
-renderProducts(); renderDrawer(); renderStaffProducts(); renderOrders(); updateClock();
+renderProducts(); renderDrawer(); renderStaffProducts(); renderOrders(); renderClues(); updateClock();
 setupScrollExperience();
+setupPlayfulInteractions();
