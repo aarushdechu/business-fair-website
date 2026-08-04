@@ -189,7 +189,7 @@ function setupScrollExperience() {
   revealVisible();
   requestAnimationFrame(() => document.body.classList.add('page-loaded'));
 
-  if (reduceMotion) return;
+  if (reduceMotion) { document.body.classList.remove('intro-active'); return; }
   let ticking = false;
   const updateScroll = () => {
     const y = window.scrollY;
@@ -201,6 +201,35 @@ function setupScrollExperience() {
     let activeId='#top';
     sectionIds.forEach(id => { if ($(id).getBoundingClientRect().top < window.innerHeight*.42) activeId=id; });
     $$('#caseNav [data-jump]').forEach(button => button.classList.toggle('active',button.dataset.jump===activeId));
+
+    const intro=$('.intro-sequence');
+    const introRect=intro.getBoundingClientRect();
+    const introDistance=Math.max(1,intro.offsetHeight-window.innerHeight);
+    const introProgress=Math.max(0,Math.min(1,-introRect.top/introDistance));
+    const introEnter=1-Math.pow(1-Math.min(1,introProgress/.38),3);
+    const introGather=Math.max(0,Math.min(1,(introProgress-.24)/.38));
+    const introReveal=Math.max(0,Math.min(1,(introProgress-.58)/.28));
+    const introFade=Math.max(0,Math.min(1,(introProgress-.9)/.1));
+    document.body.classList.toggle('intro-active',introProgress<.91);
+    intro.style.setProperty('--intro-grid-y',`${18-introProgress*35}%`);
+    intro.style.setProperty('--intro-title-one-x',`${-105*(1-introEnter)-introGather*35}vw`);
+    intro.style.setProperty('--intro-title-two-x',`${105*(1-introEnter)+introGather*35}vw`);
+    intro.style.setProperty('--intro-title-opacity',`${1-introGather}`);
+    intro.style.setProperty('--orb-paper-x',`${-4*(1-introEnter)+introGather*38}vw`);
+    intro.style.setProperty('--orb-paper-y',`${Math.sin(introProgress*8)*12-introGather*8}vh`);
+    intro.style.setProperty('--orb-paper-r',`${-18+introProgress*65}deg`);
+    intro.style.setProperty('--orb-yarn-y',`${-8*(1-introEnter)+introGather*24}vh`);
+    intro.style.setProperty('--orb-yarn-r',`${13-introProgress*55}deg`);
+    intro.style.setProperty('--orb-ink-x',`${4*(1-introEnter)-introGather*38}vw`);
+    intro.style.setProperty('--orb-ink-y',`${Math.cos(introProgress*8)*10-introGather*4}vh`);
+    intro.style.setProperty('--orb-ink-r',`${19-introProgress*70}deg`);
+    intro.style.setProperty('--intro-material-opacity',`${1-Math.max(0,(introProgress-.58)/.17)}`);
+    intro.style.setProperty('--intro-portal-scale',`${.05+introReveal*13}`);
+    intro.style.setProperty('--intro-portal-opacity',`${introReveal}`);
+    intro.style.setProperty('--intro-reveal-opacity',`${introReveal*(1-introFade)}`);
+    intro.style.setProperty('--intro-reveal-scale',`${.7+introReveal*.3+introFade*.15}`);
+    intro.style.setProperty('--intro-reveal-rotate',`${-3+introReveal*3}deg`);
+    intro.style.setProperty('--intro-scroll-opacity',`${Math.max(.12,.7-introProgress*.8)}`);
 
     const hero = $('.hero');
     const heroProgress = Math.min(1, Math.max(0, y / Math.max(1,hero.offsetHeight)));
@@ -253,11 +282,15 @@ function setupScrollExperience() {
   };
   window.addEventListener('scroll', () => { if (!ticking) { ticking=true; requestAnimationFrame(updateScroll); } }, { passive:true });
   window.addEventListener('resize',()=>{ updateCatalogMetrics(); updateScroll(); });
+  window.addEventListener('load',()=>requestAnimationFrame(updateScroll),{once:true});
+  window.addEventListener('hashchange',()=>requestAnimationFrame(updateScroll));
   updateCatalogMetrics();
   updateScroll();
+  setTimeout(updateScroll,250);
 }
 
 document.addEventListener('click', e => {
+  const orb=e.target.closest('[data-orb]'); if(orb){ $$('.material-orb').forEach(item=>item.classList.toggle('is-lit',item===orb)); toast(`${orb.dataset.orb} selected — keep scrolling to open the case`); }
   const clue=e.target.closest('[data-clue]'); if(clue) collectClue(clue.dataset.clue);
   const jump=e.target.closest('[data-jump]'); if(jump) $(jump.dataset.jump)?.scrollIntoView({behavior:'smooth'});
   const add=e.target.closest('[data-product]'); if(add) togglePick(add.dataset.product);

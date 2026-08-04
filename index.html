@@ -13,7 +13,7 @@
     <link rel="stylesheet" href="styles.css" />
     <script src="app.js" defer></script>
   </head>
-  <body>
+  <body class="intro-active">
     <div class="noise" aria-hidden="true"></div>
     <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
     <nav class="case-nav" id="caseNav" aria-label="Page sections">
@@ -38,6 +38,32 @@
     </header>
 
     <main id="storeView">
+      <section class="intro-sequence" id="opening" aria-label="A Sketchy Business introduction">
+        <div class="intro-stage">
+          <div class="intro-grid" aria-hidden="true"></div>
+          <p class="intro-kicker">A curious case of handmade things</p>
+          <div class="intro-title intro-title-one" aria-hidden="true">SOMETHING</div>
+          <div class="intro-title intro-title-two" aria-hidden="true">SKETCHY</div>
+          <div class="intro-orbits" aria-label="Our three materials">
+            <button class="material-orb orb-paper" type="button" data-orb="Paper" aria-label="Paper: folded into origami">
+              <span class="orb-symbol">◇</span><b>Paper</b><small>fold it</small>
+            </button>
+            <button class="material-orb orb-yarn" type="button" data-orb="Yarn" aria-label="Yarn: stitched into crochet">
+              <span class="orb-symbol">⌁</span><b>Yarn</b><small>stitch it</small>
+            </button>
+            <button class="material-orb orb-ink" type="button" data-orb="Ink" aria-label="Ink: drawn into caricatures">
+              <span class="orb-symbol">✦</span><b>Ink</b><small>sketch it</small>
+            </button>
+          </div>
+          <div class="intro-reveal">
+            <img src="assets/logo.png" alt="" />
+            <p>Paper. Yarn. Ink.</p>
+            <h1>Welcome to<br /><em>A Sketchy Business.</em></h1>
+          </div>
+          <div class="intro-scroll" aria-hidden="true"><span></span> Scroll to enter</div>
+        </div>
+      </section>
+
       <section class="hero" id="top">
         <img class="hero-art hero-logo" src="assets/logo.png" alt="A Sketchy Business logo" />
         <button class="hidden-clue clue-hero" data-clue="spy-mark" type="button" aria-label="Hidden maker mark">✦</button>
