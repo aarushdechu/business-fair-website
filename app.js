@@ -400,7 +400,7 @@ $('#orderForm').addEventListener('submit', async e => {
   const submit=e.currentTarget.querySelector('[type="submit"]');submit.disabled=true;
   try {
     const payload={customer:data.get('customerName').trim(),email:data.get('customerEmail').trim(),items,notes:data.get('notes').trim()};
-    const order=state.backendAvailable?await api('/orders',{method:'POST',staff:true,body:JSON.stringify(payload)}:{id:crypto.randomUUID?.()||String(Date.now()),number:nextOrderNumber(),...payload,status:items.includes('caricature')?'drawing':'received',trackCode:'DEVICE-ONLY',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),emailSent:false};
+    const order=state.backendAvailable?await api('/orders',{method:'POST',staff:true,body:JSON.stringify(payload)}):{id:crypto.randomUUID?.()||String(Date.now()),number:nextOrderNumber(),...payload,status:items.includes('caricature')?'drawing':'received',trackCode:'DEVICE-ONLY',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),emailSent:false};
     state.orders.unshift(order);save();e.currentTarget.reset();renderOrders();toast(`Order #${order.number} created${order.emailSent?' and emailed':''}! Code: ${order.trackCode}`);
   } catch(error) { toast(error.message); } finally { submit.disabled=false; }
 });
