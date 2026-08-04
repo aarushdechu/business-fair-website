@@ -25,7 +25,7 @@ function renderProducts(filter='all') {
   $('#productGrid').innerHTML = products.map((p,i) => `
     <article class="product-card ${filter !== 'all' && p.category !== filter ? 'hidden' : ''}" data-category="${p.category}">
       <div class="product-art"><span class="card-tag">File ${String(i+1).padStart(2,'0')} · ${p.category}</span><span class="emoji" aria-hidden="true">${p.icon}</span></div>
-      <div class="card-body"><h3>${p.name}</h3><p>${p.blurb}</p><div class="card-bottom"><span class="price">${p.price}</span><button class="add-button ${state.picks.includes(p.id)?'added':''}" data-product="${p.id}" type="button">${state.picks.includes(p.id)?'✓ In my picks':'Add to my picks +'}</button></div></div>
+      <div class="card-body"><h3>${p.name}</h3><p>${p.blurb}</p><div class="card-bottom"><span class="price">${p.price}</span><button class="add-button ${state.picks.includes(p.id)?'added':''}" data-product="${p.id}" type="button" aria-label="${state.picks.includes(p.id)?`Remove ${p.name} from my picks`:`Add ${p.name} to my picks`}"><span class="add-label">${state.picks.includes(p.id)?'In my picks':'Add to picks'}</span><span class="add-icon" aria-hidden="true"><b class="icon-plus">＋</b><b class="icon-check">✓</b></span></button></div></div>
     </article>`).join('');
 }
 
