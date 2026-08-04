@@ -38,6 +38,7 @@ function togglePick(id) {
 
 function renderDrawer() {
   $('#caseCount').textContent = state.picks.length;
+  $('#caseCount').dataset.count = state.picks.length;
   const box = $('#drawerItems');
   if (!state.picks.length) box.innerHTML = `<div class="empty-case"><span>⌕</span><h3>No clues yet!</h3><p>Browse the goods and add anything that catches your eye.</p></div>`;
   else box.innerHTML = state.picks.map(id => { const p=productById(id); return `<div class="drawer-item"><div class="mini-art">${p.icon}</div><div><h3>${p.name}</h3><p>${p.price}</p></div><button class="remove-item" data-remove="${id}" aria-label="Remove ${p.name}" type="button">×</button></div>`; }).join('');
