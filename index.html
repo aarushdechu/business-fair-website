@@ -22,6 +22,7 @@
       <button data-jump="#how-it-works" type="button"><span>How it works</span></button>
     </nav>
     <button class="clue-hud" id="clueHud" type="button" aria-label="Secret case: 0 of 3 clues found"><span>⌕</span><b>Secret case</b><em><span id="clueCount">0</span>/3</em></button>
+    <button class="tracking-fab" id="trackingFab" type="button"><span>◎</span> Track my order</button>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="A Sketchy Business home">
         <span class="brand-mark"><img src="assets/logo.png" alt="" /></span>
@@ -30,6 +31,7 @@
       <nav aria-label="Main navigation">
         <a href="#case-files">The goods</a>
         <a href="#how-it-works">How it works</a>
+        <button class="nav-track" id="trackNavBtn" type="button">Track order</button>
         <button class="nav-staff" id="staffNavBtn" type="button">Staff board</button>
       </nav>
       <button class="case-button button-86" id="caseButton" type="button" aria-label="Open your picks">
@@ -164,7 +166,7 @@
     <main id="staffView" class="staff-view" hidden>
       <section class="staff-top">
         <button class="back-store" id="backStoreBtn" type="button">← Back to storefront</button>
-        <div class="staff-title"><p class="eyebrow">For makers' eyes only</p><h1>Order board</h1><p>Orders are saved on this device.</p></div>
+        <div class="staff-title"><p class="eyebrow">For makers' eyes only</p><h1>Order board</h1><p>Live orders shared across devices.</p></div>
         <div class="staff-clock" id="staffClock"></div>
       </section>
       <section class="staff-stats" id="staffStats"></section>
@@ -172,6 +174,7 @@
         <form class="order-form" id="orderForm">
           <div class="form-title"><span>＋</span><div><h2>New order</h2><p>Enter it at the stall.</p></div></div>
           <label>Customer name<input id="customerName" name="customerName" autocomplete="off" required placeholder="e.g. Maya" /></label>
+          <label>Email for updates <span class="optional">Optional</span><input id="customerEmail" name="customerEmail" type="email" autocomplete="email" placeholder="maya@example.com" /></label>
           <fieldset><legend>What are they getting?</legend><div class="staff-products" id="staffProducts"></div></fieldset>
           <label>Caricature notes <textarea id="orderNotes" name="notes" rows="3" placeholder="Glasses, favorite hobby, special request…"></textarea></label>
           <button class="button button-orange full" type="submit">Create order <span>→</span></button>
@@ -196,6 +199,18 @@
     </aside>
     <div class="scrim" id="scrim" hidden></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="tracking-overlay" id="trackingOverlay" hidden>
+      <section class="tracking-card" role="dialog" aria-modal="true" aria-labelledby="trackingTitle">
+        <button class="icon-button" id="closeTracking" type="button" aria-label="Close">×</button>
+        <p class="eyebrow">Live case tracker</p>
+        <h2 id="trackingTitle">Where’s my <em>order?</em></h2>
+        <form id="trackingForm">
+          <label>Private tracking code<input id="trackingCode" name="trackingCode" required autocomplete="off" placeholder="Code from the stall or email" /></label>
+          <button class="button button-orange full" type="submit">Check my order <span>→</span></button>
+        </form>
+        <div class="tracking-result" id="trackingResult" hidden></div>
+      </section>
+    </div>
     <div class="clue-overlay" id="clueOverlay" hidden>
       <section class="clue-badge" role="dialog" aria-modal="true" aria-labelledby="clueTitle">
         <button class="icon-button" id="closeClueBadge" type="button" aria-label="Close">×</button>

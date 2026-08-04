@@ -1,15 +1,30 @@
 # A Sketchy Business
 
-A dependency-free storefront and stall order board for a children's business fair.
+A storefront, shared stall order board, private customer tracking page, and optional email notifications for a children's business fair.
 
-## Run it
+## Run locally
 
-Open `index.html` directly, or from this folder run:
+Install Node.js 20+, create a PostgreSQL database, copy `.env.example` to `.env`, and set the values. Then run:
 
 ```bash
-python3 -m http.server 8000
+npm install
+npm start
 ```
 
-Then visit `http://localhost:8000`.
+Visit `http://localhost:3000`.
 
-The customer “My picks” list and staff orders are stored in the browser's local storage on that device. There is no backend, login, online payment, or data sync.
+## Deploy on Render
+
+The included `render.yaml` creates a Node web service and PostgreSQL database. Create a new Render Blueprint from this repository, then provide:
+
+- `STAFF_PIN`: the private PIN used to open the staff board.
+- `RESEND_API_KEY`: optional; enables status emails.
+- `EMAIL_FROM`: optional; for example `A Sketchy Business <orders@your-verified-domain.com>`.
+
+The existing static Render service cannot become a web service in place. Create the Blueprint service, verify it works, then point your custom domain to the new service if you use one.
+
+The server creates its `orders` table automatically. Customers receive a random private tracking code. The public tracking endpoint returns only the order name, items, status, and timestamps; email addresses and staff notes remain private.
+
+## Email setup
+
+Create a Resend account, verify a sending domain, and add the API key and sender to Render's environment variables. Without those two values, order tracking still works and staff can copy the tracking code for the customer, but emails are skipped.

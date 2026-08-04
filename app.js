@@ -12,17 +12,30 @@ const products = [
 
 const state = {
   picks: JSON.parse(localStorage.getItem('sketchy-picks') || '[]'),
-  orders: JSON.parse(localStorage.getItem('sketchy-orders') || '[]'),
+  orders: JSON.parse(localStorage.getItem('sketchy-orders') || '[]').map(order=>({ ...order,email:order.email||'',trackCode:order.trackCode||'DEVICE-ONLY',updatedAt:order.updatedAt||order.createdAt })),
   clues: JSON.parse(localStorage.getItem('sketchy-clues') || '[]'),
-  orderFilter: 'active'
+  orderFilter: 'active',
+  staffPin: sessionStorage.getItem('sketchy-staff-pin') || '',
+  backendAvailable: true
 };
 let revealObserver;
 let catalogTravel = 0;
+let trackingRefreshTimer;
+let staffRefreshTimer;
 
 const $ = (selector, root=document) => root.querySelector(selector);
 const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
 const save = () => { localStorage.setItem('sketchy-picks', JSON.stringify(state.picks)); localStorage.setItem('sketchy-orders', JSON.stringify(state.orders)); localStorage.setItem('sketchy-clues', JSON.stringify(state.clues)); };
 const productById = id => products.find(p => p.id === id);
+
+async function api(path,options={}) {
+  const headers={ 'Content-Type':'application/json',...(options.staff?{'X-Staff-Pin':state.staffPin}:{}),...(options.headers||{}) };
+  const response=await fetch(`/api${path}`,{ ...options,headers });
+  const data=response.status===204?null:await response.json().catch(()=>({ error:'The server returned an unreadable response.' }));
+  if(!response.ok) { const error=new Error(data?.error || 'Request failed.'); error.status=response.status; throw error; }
+  return data;
+}
+async function loadOrders() { state.orders=await api('/orders',{staff:true}); renderOrders(); }
 
 function renderProducts(filter='all') {
   $('#productGrid').innerHTML = products.map((p,i) => `
@@ -73,10 +86,7 @@ function toast(message) { const el=$('#toast'); el.textContent=message; el.class
 function renderStaffProducts() {
   $('#staffProducts').innerHTML = products.map(p => `<label class="staff-product"><input type="checkbox" name="items" value="${p.id}" />${p.name}</label>`).join('');
 }
-function nextOrderNumber() {
-  const nums=state.orders.map(o=>Number(o.number)).filter(Number.isFinite);
-  return String(Math.max(100,...nums)+1);
-}
+function nextOrderNumber() { return String(Math.max(100,...state.orders.map(o=>Number(o.number)).filter(Number.isFinite))+1); }
 function renderStats() {
   const active=state.orders.filter(o=>!['picked-up'].includes(o.status)).length;
   const drawing=state.orders.filter(o=>o.status==='drawing').length;
@@ -92,12 +102,41 @@ function filteredOrders() {
 function renderOrders() {
   renderStats(); const orders=filteredOrders(); const box=$('#ordersList');
   if(!orders.length) { box.innerHTML=`<div class="empty-orders"><span>✓</span><h3>All clear!</h3><p>No orders in this view.</p></div>`; return; }
-  box.innerHTML=orders.map(o=>`<article class="order-card status-${o.status}"><div class="order-number"><div><small>ORDER</small><strong>#${o.number}</strong></div></div><div class="order-info"><h3>${escapeHtml(o.customer)}</h3><p><b>${o.items.map(id=>productById(id)?.name).filter(Boolean).join(' · ')}</b></p>${o.notes?`<p>Note: ${escapeHtml(o.notes)}</p>`:''}<p>${new Date(o.createdAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</p></div><div class="order-actions"><select data-order-status="${o.id}" aria-label="Status for order ${o.number}"><option value="received" ${o.status==='received'?'selected':''}>Received</option><option value="drawing" ${o.status==='drawing'?'selected':''}>Drawing</option><option value="ready" ${o.status==='ready'?'selected':''}>Ready!</option><option value="picked-up" ${o.status==='picked-up'?'selected':''}>Picked up</option></select><button class="delete-order" data-delete-order="${o.id}" aria-label="Delete order ${o.number}" type="button">×</button></div></article>`).join('');
+  box.innerHTML=orders.map(o=>`<article class="order-card status-${o.status}"><div class="order-number"><div><small>ORDER</small><strong>#${o.number}</strong></div></div><div class="order-info"><h3>${escapeHtml(o.customer)}</h3><p><b>${o.items.map(id=>productById(id)?.name).filter(Boolean).join(' · ')}</b></p>${o.email?`<p>Updates: ${escapeHtml(o.email)}</p>`:''}${o.notes?`<p>Note: ${escapeHtml(o.notes)}</p>`:''}<p><b>Tracking code:</b> <button class="copy-code" data-copy-code="${o.trackCode}" type="button">${o.trackCode}</button></p><p>${new Date(o.createdAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</p></div><div class="order-actions"><select data-order-status="${o.id}" aria-label="Status for order ${o.number}"><option value="received" ${o.status==='received'?'selected':''}>Received</option><option value="drawing" ${o.status==='drawing'?'selected':''}>Drawing</option><option value="ready" ${o.status==='ready'?'selected':''}>Ready!</option><option value="picked-up" ${o.status==='picked-up'?'selected':''}>Picked up</option></select><button class="delete-order" data-delete-order="${o.id}" aria-label="Delete order ${o.number}" type="button">×</button></div></article>`).join('');
 }
 function escapeHtml(value) { const d=document.createElement('div'); d.textContent=value; return d.innerHTML; }
-function showStaff() { closeDrawer(); $('#storeView').hidden=true; $('footer').hidden=true; $('#staffView').hidden=false; $('.site-header').hidden=true; $('#caseNav').hidden=true; $('#clueHud').hidden=true; window.scrollTo(0,0); renderOrders(); updateClock(); }
-function showStore() { $('#storeView').hidden=false; $('footer').hidden=false; $('#staffView').hidden=true; $('.site-header').hidden=false; $('#caseNav').hidden=false; $('#clueHud').hidden=false; window.scrollTo(0,0); }
+async function showStaff() {
+  if(!state.staffPin) state.staffPin=prompt('Enter the staff PIN:')?.trim() || '';
+  if(!state.staffPin) return;
+  try { await loadOrders();state.backendAvailable=true; }
+  catch(error) {
+    if(error.status===401){ state.staffPin='';sessionStorage.removeItem('sketchy-staff-pin');toast(error.message);return; }
+    state.backendAvailable=false;renderOrders();toast('Backend not deployed yet — using this device only');
+  }
+  sessionStorage.setItem('sketchy-staff-pin',state.staffPin);
+  closeDrawer(); $('#storeView').hidden=true; $('footer').hidden=true; $('#staffView').hidden=false; $('.site-header').hidden=true; $('#caseNav').hidden=true; $('#clueHud').hidden=true; $('#trackingFab').hidden=true; window.scrollTo(0,0); updateClock();
+  clearInterval(staffRefreshTimer);if(state.backendAvailable)staffRefreshTimer=setInterval(()=>loadOrders().catch(()=>{}),15000);
+}
+function showStore() { clearInterval(staffRefreshTimer);$('#storeView').hidden=false; $('footer').hidden=false; $('#staffView').hidden=true; $('.site-header').hidden=false; $('#caseNav').hidden=false; $('#clueHud').hidden=false; $('#trackingFab').hidden=false; window.scrollTo(0,0); }
 function updateClock() { const el=$('#staffClock'); if(el) el.textContent=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); }
+
+function openTracking(code='') {
+  $('#trackingOverlay').hidden=false; document.body.style.overflow='hidden';
+  $('#trackingCode').value=code; $('#trackingResult').hidden=true;
+  if(code) lookupOrder(code); else setTimeout(()=>$('#trackingCode').focus(),50);
+}
+function closeTracking() { clearInterval(trackingRefreshTimer);$('#trackingOverlay').hidden=true;document.body.style.overflow=''; }
+async function lookupOrder(code,silent=false) {
+  const result=$('#trackingResult'); result.hidden=false; if(!silent)result.innerHTML='<p>Checking the evidence…</p>';
+  try {
+    const order=await api(`/track/${encodeURIComponent(code.trim())}`);
+    const steps=['received','drawing','ready','picked-up'],current=Math.max(0,steps.indexOf(order.status));
+    const labels={received:'Order received',drawing:'Being made',ready:'Ready to collect!', 'picked-up':'Picked up'};
+    result.innerHTML=`<div class="tracking-head"><div><p class="eyebrow">Order #${order.number}</p><h3>Hi, ${escapeHtml(order.customer)}!</h3></div><span class="tracking-status">${labels[order.status]}</span></div><div class="status-track" aria-label="Order progress">${steps.map((step,i)=>`<span class="${i<=current?'done':''}" title="${labels[step]}"></span>`).join('')}</div><p><b>${order.items.map(id=>productById(id)?.name).filter(Boolean).join(' · ')}</b></p><p>${order.status==='ready'?'Your order is ready—come back to the stall and show us this screen.':order.status==='picked-up'?'Case closed. Thanks for visiting A Sketchy Business!':'We’ll update this page as your order moves along.'}</p><p class="tracking-updated">Last updated ${new Date(order.updatedAt).toLocaleString([],{hour:'numeric',minute:'2-digit',month:'short',day:'numeric'})}</p>`;
+    history.replaceState(null,'',`${location.pathname}?track=${encodeURIComponent(code.trim())}`);
+    clearInterval(trackingRefreshTimer);trackingRefreshTimer=setInterval(()=>lookupOrder(code,true),15000);
+  } catch(error) { if(!silent)result.innerHTML=`<p><b>Case not found.</b><br>${escapeHtml(error.message)}</p>`; }
+}
 
 function renderClues() {
   const count = state.clues.length;
@@ -335,7 +374,7 @@ function setupScrollExperience() {
   setTimeout(updateScroll,250);
 }
 
-document.addEventListener('click', e => {
+document.addEventListener('click', async e => {
   const storyJump=e.target.closest('[data-story-jump]'); if(storyJump){ const story=$('.product-story'),distance=story.offsetHeight-window.innerHeight,progress=Number(storyJump.dataset.storyJump)/(products.length-1); window.scrollTo({top:story.offsetTop+distance*progress,behavior:'smooth'}); }
   const orb=e.target.closest('[data-orb]'); if(orb){ $$('.material-orb').forEach(item=>item.classList.toggle('is-lit',item===orb)); toast(`${orb.dataset.orb} selected — keep scrolling to open the case`); }
   const clue=e.target.closest('[data-clue]'); if(clue) collectClue(clue.dataset.clue);
@@ -344,26 +383,39 @@ document.addEventListener('click', e => {
   const remove=e.target.closest('[data-remove]'); if(remove) togglePick(remove.dataset.remove);
   const filter=e.target.closest('[data-filter]'); if(filter){ $$('.filter').forEach(b=>b.classList.toggle('active',b===filter)); renderProducts(filter.dataset.filter); }
   const orderFilter=e.target.closest('[data-status]'); if(orderFilter){ state.orderFilter=orderFilter.dataset.status; $$('.order-filters button').forEach(b=>b.classList.toggle('active',b===orderFilter)); renderOrders(); }
-  const del=e.target.closest('[data-delete-order]'); if(del && confirm('Delete this order?')) { state.orders=state.orders.filter(o=>o.id!==del.dataset.deleteOrder); save(); renderOrders(); }
+  const copy=e.target.closest('[data-copy-code]'); if(copy){ await navigator.clipboard?.writeText(copy.dataset.copyCode); toast('Tracking code copied'); }
+  const del=e.target.closest('[data-delete-order]'); if(del && confirm('Delete this order?')) { try { if(state.backendAvailable)await api(`/orders/${del.dataset.deleteOrder}`,{method:'DELETE',staff:true}); state.orders=state.orders.filter(o=>o.id!==del.dataset.deleteOrder);save();renderOrders(); } catch(error){ toast(error.message); } }
 });
-document.addEventListener('change', e => {
-  if(e.target.matches('[data-order-status]')) { const order=state.orders.find(o=>o.id===e.target.dataset.orderStatus); if(order){ order.status=e.target.value; save(); renderOrders(); toast(`Order #${order.number} is now ${order.status.replace('-',' ')}`); } }
+document.addEventListener('change', async e => {
+  if(e.target.matches('[data-order-status]')) {
+    const order=state.orders.find(o=>o.id===e.target.dataset.orderStatus); if(!order)return;
+    const previous=order.status;e.target.disabled=true;
+    try { const updated=state.backendAvailable?await api(`/orders/${order.id}`,{method:'PATCH',staff:true,body:JSON.stringify({status:e.target.value})}):{...order,status:e.target.value,emailSent:false}; Object.assign(order,updated);save();renderOrders();toast(`Order #${order.number} updated${updated.emailSent?' and emailed':''}`); }
+    catch(error){ order.status=previous;renderOrders();toast(error.message); }
+  }
 });
-$('#orderForm').addEventListener('submit', e => {
+$('#orderForm').addEventListener('submit', async e => {
   e.preventDefault(); const data=new FormData(e.currentTarget); const items=data.getAll('items');
   if(!items.length) { toast('Choose at least one item'); return; }
-  const order={id:crypto.randomUUID?.() || String(Date.now()),number:nextOrderNumber(),customer:data.get('customerName').trim(),items,notes:data.get('notes').trim(),status:items.includes('caricature')?'drawing':'received',createdAt:new Date().toISOString()};
-  state.orders.unshift(order); save(); e.currentTarget.reset(); renderOrders(); toast(`Order #${order.number} created!`);
+  const submit=e.currentTarget.querySelector('[type="submit"]');submit.disabled=true;
+  try {
+    const payload={customer:data.get('customerName').trim(),email:data.get('customerEmail').trim(),items,notes:data.get('notes').trim()};
+    const order=state.backendAvailable?await api('/orders',{method:'POST',staff:true,body:JSON.stringify(payload)}:{id:crypto.randomUUID?.()||String(Date.now()),number:nextOrderNumber(),...payload,status:items.includes('caricature')?'drawing':'received',trackCode:'DEVICE-ONLY',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),emailSent:false};
+    state.orders.unshift(order);save();e.currentTarget.reset();renderOrders();toast(`Order #${order.number} created${order.emailSent?' and emailed':''}! Code: ${order.trackCode}`);
+  } catch(error) { toast(error.message); } finally { submit.disabled=false; }
 });
 $('#caseButton').addEventListener('click',openDrawer); $('#bottomPicksBtn').addEventListener('click',openDrawer); $('#closeDrawer').addEventListener('click',closeDrawer); $('#scrim').addEventListener('click',closeDrawer);
 $('#staffNavBtn').addEventListener('click',showStaff); $('#backStoreBtn').addEventListener('click',showStore);
+$('#trackNavBtn').addEventListener('click',()=>openTracking()); $('#trackingFab').addEventListener('click',()=>openTracking()); $('#closeTracking').addEventListener('click',closeTracking); $('#trackingOverlay').addEventListener('click',e=>{if(e.target===$('#trackingOverlay'))closeTracking();});
+$('#trackingForm').addEventListener('submit',e=>{e.preventDefault();lookupOrder(new FormData(e.currentTarget).get('trackingCode'));});
 $('#showAtStallBtn').addEventListener('click',()=>{ toast('Show this screen to us at the stall!'); });
 $('#clueHud').addEventListener('click',()=> state.clues.length===3 ? showClueBadge() : toast(`${3-state.clues.length} secret maker mark${3-state.clues.length===1?'':'s'} still hiding…`));
 $('#closeClueBadge').addEventListener('click',closeClueBadge); $('#clueOverlay').addEventListener('click',e=>{ if(e.target===$('#clueOverlay')) closeClueBadge(); });
 $('#huntAgainBtn').addEventListener('click',()=>{ state.clues=[];save();renderClues();closeClueBadge();toast('The secret case is open again'); });
-$('#clearDoneBtn').addEventListener('click',()=>{ const count=state.orders.filter(o=>o.status==='picked-up').length; if(count && confirm(`Clear ${count} picked-up order${count===1?'':'s'}?`)){ state.orders=state.orders.filter(o=>o.status!=='picked-up');save();renderOrders(); } });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeDrawer(); closeClueBadge(); } });
+$('#clearDoneBtn').addEventListener('click',async()=>{ const count=state.orders.filter(o=>o.status==='picked-up').length; if(count && confirm(`Clear ${count} picked-up order${count===1?'':'s'}?`)){ try { if(state.backendAvailable)await api('/orders/picked-up',{method:'DELETE',staff:true});state.orders=state.orders.filter(o=>o.status!=='picked-up');save();renderOrders(); } catch(error){toast(error.message);} } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeDrawer(); closeClueBadge(); closeTracking(); } });
 setInterval(updateClock,30000);
 renderProducts(); renderProductStory(); renderDrawer(); renderStaffProducts(); renderOrders(); renderClues(); updateClock();
 setupScrollExperience();
 setupPlayfulInteractions();
+const trackingFromUrl=new URLSearchParams(location.search).get('track'); if(trackingFromUrl) openTracking(trackingFromUrl);
