@@ -15,6 +15,7 @@ const state = {
   orders: JSON.parse(localStorage.getItem('sketchy-orders') || '[]'),
   orderFilter: 'active'
 };
+let revealObserver;
 
 const $ = (selector, root=document) => root.querySelector(selector);
 const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
@@ -27,6 +28,7 @@ function renderProducts(filter='all') {
       <div class="product-art"><span class="card-tag">File ${String(i+1).padStart(2,'0')} · ${p.category}</span><span class="emoji" aria-hidden="true">${p.icon}</span></div>
       <div class="card-body"><h3>${p.name}</h3><p>${p.blurb}</p><div class="card-bottom"><span class="price">${p.price}</span><button class="add-button ${state.picks.includes(p.id)?'added':''}" data-product="${p.id}" type="button" aria-label="${state.picks.includes(p.id)?`Remove ${p.name} from my picks`:`Add ${p.name} to my picks`}"><span class="add-label">${state.picks.includes(p.id)?'In my picks':'Add to picks'}</span><span class="add-icon" aria-hidden="true"><b class="icon-plus">＋</b><b class="icon-check">✓</b></span></button></div></div>
     </article>`).join('');
+  if (revealObserver) requestAnimationFrame(() => observeReveals($('#productGrid')));
 }
 
 function togglePick(id) {
@@ -80,6 +82,75 @@ function showStaff() { closeDrawer(); $('#storeView').hidden=true; $('footer').h
 function showStore() { $('#storeView').hidden=false; $('footer').hidden=false; $('#staffView').hidden=true; $('.site-header').hidden=false; window.scrollTo(0,0); }
 function updateClock() { const el=$('#staffClock'); if(el) el.textContent=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); }
 
+function observeReveals(root=document) {
+  const targets = $$('.product-card, .section-heading, .filter-row, .portrait-stack, .feature-copy, .steps article, .final-cta > *', root);
+  targets.forEach((el,index) => {
+    if (el.dataset.revealReady) return;
+    el.dataset.revealReady = 'true';
+    el.classList.add('reveal-on-scroll');
+    if (el.matches('.portrait-stack')) el.classList.add('reveal-left');
+    if (el.matches('.feature-copy')) el.classList.add('reveal-right');
+    el.style.setProperty('--reveal-delay', `${(index % 3) * 90}ms`);
+    revealObserver.observe(el);
+  });
+}
+
+function setupScrollExperience() {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const revealVisible = () => {
+    $$('.reveal-on-scroll:not(.is-visible)').forEach(el => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight * .94 && rect.bottom > 0) el.classList.add('is-visible');
+    });
+  };
+  revealObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting) return;
+      entry.target.classList.add('is-visible');
+      revealObserver.unobserve(entry.target);
+    });
+  }, { threshold:.12, rootMargin:'0px 0px -8% 0px' });
+  observeReveals();
+  revealVisible();
+  requestAnimationFrame(() => document.body.classList.add('page-loaded'));
+
+  if (reduceMotion) return;
+  let ticking = false;
+  const updateScroll = () => {
+    const y = window.scrollY;
+    const max = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    $('#scrollProgress').style.transform = `scaleX(${Math.min(1,y/max)})`;
+    $('.site-header').classList.toggle('scrolled', y > 24);
+    revealVisible();
+
+    const hero = $('.hero');
+    const heroProgress = Math.min(1, Math.max(0, y / Math.max(1,hero.offsetHeight)));
+    hero.style.setProperty('--hero-logo-y', `${heroProgress * 78}px`);
+    hero.style.setProperty('--hero-logo-rotate', `${heroProgress * 2.2}deg`);
+    hero.style.setProperty('--hero-logo-scale', `${1 - heroProgress * .055}`);
+    hero.style.setProperty('--hero-copy-y', `${heroProgress * 34}px`);
+
+    const catalog = $('.catalog');
+    const catalogRect = catalog.getBoundingClientRect();
+    const catalogTravel = (window.innerHeight - catalogRect.top) / (window.innerHeight + catalogRect.height);
+    catalog.style.setProperty('--catalog-shift', `${-4 + Math.max(0,Math.min(1,catalogTravel)) * -24}vw`);
+
+    const feature = $('.caricature-feature');
+    const featureRect = feature.getBoundingClientRect();
+    const featureProgress = Math.max(-1,Math.min(1,(window.innerHeight * .55 - featureRect.top) / window.innerHeight));
+    feature.style.setProperty('--portrait-one-y', `${featureProgress * -28}px`);
+    feature.style.setProperty('--portrait-two-y', `${featureProgress * 35}px`);
+
+    const how = $('.how');
+    const howRect = how.getBoundingClientRect();
+    const howProgress = Math.max(0,Math.min(1,(window.innerHeight * .75 - howRect.top) / (howRect.height * .65)));
+    $('.steps').style.setProperty('--steps-progress', howProgress);
+    ticking = false;
+  };
+  window.addEventListener('scroll', () => { if (!ticking) { ticking=true; requestAnimationFrame(updateScroll); } }, { passive:true });
+  updateScroll();
+}
+
 document.addEventListener('click', e => {
   const add=e.target.closest('[data-product]'); if(add) togglePick(add.dataset.product);
   const remove=e.target.closest('[data-remove]'); if(remove) togglePick(remove.dataset.remove);
@@ -103,3 +174,4 @@ $('#clearDoneBtn').addEventListener('click',()=>{ const count=state.orders.filte
 document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeDrawer(); });
 setInterval(updateClock,30000);
 renderProducts(); renderDrawer(); renderStaffProducts(); renderOrders(); updateClock();
+setupScrollExperience();
