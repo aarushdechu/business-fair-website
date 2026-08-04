@@ -62,20 +62,34 @@
       <section class="catalog" id="case-files">
         <div class="catalog-watermark" aria-hidden="true">THE GOODS · THE GOODS ·</div>
         <button class="hidden-clue clue-catalog" data-clue="paper-mark" type="button" aria-label="Hidden maker mark">⌁</button>
-        <div class="section-heading">
-          <div>
-            <p class="eyebrow">Evidence locker</p>
-            <h2>Pick your <em>favorite.</em></h2>
+        <div class="catalog-stage">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Evidence locker</p>
+              <h2>Pick your <em>favorite.</em></h2>
+            </div>
+            <p>Scroll to inspect every case file. Add your favorites, then show the list to us at the stall.</p>
           </div>
-          <p>Tap “Add to my picks” to make a list. Then show it to us at the stall—no online payment, no mystery.</p>
+          <div class="filter-row" role="group" aria-label="Filter products">
+            <button class="filter active" data-filter="all" type="button">All the goods</button>
+            <button class="filter" data-filter="origami" type="button">Origami</button>
+            <button class="filter" data-filter="crochet" type="button">Crochet</button>
+            <button class="filter" data-filter="art" type="button">Caricatures</button>
+            <span class="horizontal-hint">Scroll to investigate <b>→</b></span>
+          </div>
+          <div class="product-grid" id="productGrid"></div>
         </div>
-        <div class="filter-row" role="group" aria-label="Filter products">
-          <button class="filter active" data-filter="all" type="button">All the goods</button>
-          <button class="filter" data-filter="origami" type="button">Origami</button>
-          <button class="filter" data-filter="crochet" type="button">Crochet</button>
-          <button class="filter" data-filter="art" type="button">Caricatures</button>
+      </section>
+
+      <section class="case-transition" aria-label="Handmade materials">
+        <div class="case-transition-stage">
+          <div class="transition-iris" aria-hidden="true"></div>
+          <p class="transition-kicker">Every clue starts with</p>
+          <div class="kinetic-word word-paper">PAPER</div>
+          <div class="kinetic-word word-yarn">YARN</div>
+          <div class="kinetic-word word-ink">INK</div>
+          <div class="transition-verdict"><span>01 / 03</span><h2>Three materials.<br /><em>Infinite suspects.</em></h2></div>
         </div>
-        <div class="product-grid" id="productGrid"></div>
       </section>
 
       <section class="caricature-feature">

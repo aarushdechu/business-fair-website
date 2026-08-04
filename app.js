@@ -17,6 +17,7 @@ const state = {
   orderFilter: 'active'
 };
 let revealObserver;
+let catalogTravel = 0;
 
 const $ = (selector, root=document) => root.querySelector(selector);
 const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
@@ -30,6 +31,7 @@ function renderProducts(filter='all') {
       <div class="card-body"><h3>${p.name}</h3><p>${p.blurb}</p><div class="card-bottom"><span class="price">${p.price}</span><button class="add-button ${state.picks.includes(p.id)?'added':''}" data-product="${p.id}" type="button" aria-label="${state.picks.includes(p.id)?`Remove ${p.name} from my picks`:`Add ${p.name} to my picks`}"><span class="add-label">${state.picks.includes(p.id)?'In my picks':'Add to picks'}</span><span class="add-icon" aria-hidden="true"><b class="icon-plus">＋</b><b class="icon-check">✓</b></span></button></div></div>
     </article>`).join('');
   if (revealObserver) requestAnimationFrame(() => observeReveals($('#productGrid')));
+  requestAnimationFrame(()=>{ updateCatalogMetrics(); window.dispatchEvent(new Event('scroll')); });
 }
 
 function togglePick(id) {
@@ -119,6 +121,16 @@ function showClueBadge() {
 }
 function closeClueBadge() { $('#clueOverlay').hidden=true; document.body.style.overflow=''; }
 
+function updateCatalogMetrics() {
+  const catalog=$('.catalog'),stage=$('.catalog-stage'),track=$('#productGrid');
+  if (!catalog || !stage || !track) return;
+  if (window.innerWidth <= 950 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    catalogTravel=0; catalog.style.height=''; catalog.style.setProperty('--catalog-x','0px'); return;
+  }
+  catalogTravel=Math.max(0,track.scrollWidth-stage.clientWidth);
+  catalog.style.height=`${Math.round(window.innerHeight+catalogTravel+window.innerHeight*.22)}px`;
+}
+
 function setupPlayfulInteractions() {
   const finePointer = window.matchMedia('(pointer:fine)').matches;
   if (finePointer) {
@@ -199,8 +211,33 @@ function setupScrollExperience() {
 
     const catalog = $('.catalog');
     const catalogRect = catalog.getBoundingClientRect();
-    const catalogTravel = (window.innerHeight - catalogRect.top) / (window.innerHeight + catalogRect.height);
-    catalog.style.setProperty('--catalog-shift', `${-4 + Math.max(0,Math.min(1,catalogTravel)) * -24}vw`);
+    const catalogDistance=Math.max(1,catalog.offsetHeight-window.innerHeight);
+    const catalogProgress=Math.max(0,Math.min(1,(68-catalogRect.top)/catalogDistance));
+    const catalogExit=Math.max(0,Math.min(1,(catalogProgress-.94)/.06));
+    $('.catalog-stage').style.opacity=`${1-catalogExit}`;
+    $('.catalog-stage').style.clipPath=`inset(0 0 ${catalogExit*100}% 0)`;
+    $('.catalog-stage').style.pointerEvents=catalogExit>.9?'none':'';
+    catalog.style.setProperty('--catalog-x',`${catalogProgress*catalogTravel*-1}px`);
+    catalog.style.setProperty('--catalog-shift', `${-4+catalogProgress*-34}vw`);
+
+    const transition=$('.case-transition');
+    const transitionRect=transition.getBoundingClientRect();
+    $('.site-header').classList.toggle('dark-scene',catalogProgress>.985&&transitionRect.bottom>68);
+    const transitionDistance=Math.max(1,transition.offsetHeight-window.innerHeight);
+    const transitionProgress=Math.max(0,Math.min(1,-transitionRect.top/transitionDistance));
+    const enter=1-Math.pow(1-Math.min(1,transitionProgress/.42),3);
+    const exit=Math.max(0,Math.min(1,(transitionProgress-.62)/.24));
+    const iris=Math.max(0,Math.min(1,(transitionProgress-.46)/.42));
+    const verdict=Math.max(0,Math.min(1,(transitionProgress-.66)/.25));
+    transition.style.setProperty('--paper-x',`${-110*(1-enter)-exit*70}vw`);
+    transition.style.setProperty('--yarn-x',`${110*(1-enter)+exit*70}vw`);
+    transition.style.setProperty('--ink-y',`${70*(1-enter)-exit*65}vh`);
+    transition.style.setProperty('--ink-rotate',`${-12+enter*12-exit*8}deg`);
+    transition.style.setProperty('--materials-opacity',`${1-exit}`);
+    transition.style.setProperty('--iris-scale',`${.12+iris*15}`);
+    transition.style.setProperty('--verdict-opacity',`${verdict}`);
+    transition.style.setProperty('--verdict-scale',`${.75+verdict*.25}`);
+    transition.style.setProperty('--verdict-rotate',`${-3+verdict*3}deg`);
 
     const feature = $('.caricature-feature');
     const featureRect = feature.getBoundingClientRect();
@@ -215,6 +252,8 @@ function setupScrollExperience() {
     ticking = false;
   };
   window.addEventListener('scroll', () => { if (!ticking) { ticking=true; requestAnimationFrame(updateScroll); } }, { passive:true });
+  window.addEventListener('resize',()=>{ updateCatalogMetrics(); updateScroll(); });
+  updateCatalogMetrics();
   updateScroll();
 }
 
