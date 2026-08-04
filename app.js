@@ -1,4 +1,5 @@
 const products = [
+  { id:'caricature', name:'Personalized Caricature', category:'art', icon:'✍️', blurb:'A funny, one-of-one portrait drawn just for you.', price:'Made on site' },
   { id:'eagle', name:'Origami Eagle', category:'origami', icon:'🦅', blurb:'A sharp-winged paper bird ready to soar.', price:'Ask at stall' },
   { id:'dragon', name:'Origami Dragon', category:'origami', icon:'🐉', blurb:'A fierce little desk guardian with folded wings.', price:'Ask at stall' },
   { id:'mouse', name:'Origami Mouse', category:'origami', icon:'🐭', blurb:'Tiny, curious, and suspiciously good at hiding.', price:'Ask at stall' },
@@ -6,8 +7,7 @@ const products = [
   { id:'turtle', name:'Origami Turtle', category:'origami', icon:'🐢', blurb:'Slow, steady, and made from one clever sheet.', price:'Ask at stall' },
   { id:'origami-bookmark', name:'Origami Bookmark', category:'origami', icon:'🔖', blurb:'A colorful page-corner companion for your next case.', price:'Ask at stall' },
   { id:'heart-keychain', name:'Crochet Heart Keychain', category:'crochet', icon:'🧡', blurb:'A soft little heart to take everywhere.', price:'Ask at stall' },
-  { id:'crochet-bookmark', name:'Crochet Bookmark', category:'crochet', icon:'🧶', blurb:'A cozy, handmade way to save your page.', price:'Ask at stall' },
-  { id:'caricature', name:'Personalized Caricature', category:'art', icon:'✍️', blurb:'A funny, one-of-one portrait drawn just for you.', price:'Made on site' }
+  { id:'crochet-bookmark', name:'Crochet Bookmark', category:'crochet', icon:'🧶', blurb:'A cozy, handmade way to save your page.', price:'Ask at stall' }
 ];
 
 const state = {
@@ -39,8 +39,8 @@ async function loadOrders() { state.orders=await api('/orders',{staff:true}); re
 
 function renderProducts(filter='all') {
   $('#productGrid').innerHTML = products.map((p,i) => `
-    <article class="product-card ${filter !== 'all' && p.category !== filter ? 'hidden' : ''}" data-category="${p.category}">
-      <div class="product-art"><span class="card-tag">File ${String(i+1).padStart(2,'0')} · ${p.category}</span><span class="emoji" aria-hidden="true">${p.icon}</span><span class="card-glint" aria-hidden="true"></span></div>
+    <article class="product-card${p.id==='caricature'?' featured-product':''} ${filter !== 'all' && p.category !== filter ? 'hidden' : ''}" data-category="${p.category}">
+      <div class="product-art"><span class="card-tag">${p.id==='caricature'?'★ Featured · drawn on site':`File ${String(i+1).padStart(2,'0')} · ${p.category}`}</span><span class="emoji" aria-hidden="true">${p.icon}</span><span class="card-glint" aria-hidden="true"></span></div>
       <div class="card-body"><h3>${p.name}</h3><p>${p.blurb}</p><div class="card-bottom"><span class="price">${p.price}</span><button class="add-button ${state.picks.includes(p.id)?'added':''}" data-product="${p.id}" type="button" aria-label="${state.picks.includes(p.id)?`Remove ${p.name} from my picks`:`Add ${p.name} to my picks`}"><span class="add-label">${state.picks.includes(p.id)?'In my picks':'Add to picks'}</span><span class="add-icon" aria-hidden="true"><b class="icon-plus">＋</b><b class="icon-check">✓</b></span></button></div></div>
     </article>`).join('');
   if (revealObserver) requestAnimationFrame(() => observeReveals($('#productGrid')));
@@ -49,11 +49,11 @@ function renderProducts(filter='all') {
 
 function renderProductStory() {
   $('#storyCards').innerHTML=products.map((p,i)=>`
-    <article class="story-card${i===0?' is-current':''}" data-story-index="${i}">
+    <article class="story-card${i===0?' is-current':''}${p.id==='caricature'?' featured-story':''}" data-story-index="${i}">
       <span class="story-number" aria-hidden="true">${String(i+1).padStart(2,'0')}</span>
       <div class="story-object" aria-hidden="true">${p.icon}</div>
       <div class="story-copy">
-        <p class="eyebrow">Case ${String(i+1).padStart(2,'0')} · ${p.category}</p>
+        <p class="eyebrow">${p.id==='caricature'?'★ Featured case':`Case ${String(i+1).padStart(2,'0')} · ${p.category}`}</p>
         <h2>${p.name}<em>${p.category==='origami'?'One sheet. A lot of personality.':p.category==='crochet'?'Soft, useful, and made by hand.':'Your face. Our funniest lines.'}</em></h2>
         <p>${p.blurb}</p><span class="story-price">${p.price}</span>
       </div>
