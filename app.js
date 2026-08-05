@@ -1,20 +1,25 @@
 const products = [
-  { id:'caricature', name:'Personalized Caricature', category:'art', icon:'✍️', blurb:'A personalized black-and-white caricature drawn from a photo we take at the stall—and delete after drawing.', price:'$12 · +$7 per extra person (max 3)' },
-  { id:'eagle', name:'Origami Eagle', category:'origami', icon:'🦅', blurb:'An intricate, feathery eagle and one of our hardest folds to master.', price:'$8' },
-  { id:'dragon', name:'Origami Dragon v3', category:'origami', icon:'🐉', blurb:'An upgraded fair-exclusive dragon with a better neck and folded wings.', price:'$5' },
-  { id:'mouse', name:'Origami Mouse', category:'origami', icon:'🐭', blurb:'A tiny, adorable mouse with very cool ears and a tail we really love.', price:'$6' },
-  { id:'kangaroo', name:'Origami Kangaroo', category:'origami', icon:'🦘', blurb:'No comment. Just KANGAROOOOO—in carefully folded paper.', price:'$5' },
-  { id:'turtle', name:'Origami Turtle', category:'origami', icon:'🐢', blurb:'A turtle with a dimensional shell and a satisfyingly flat top.', price:'$5' },
-  { id:'crochet-bookmark', name:'Crochet Bookmark', category:'crochet', icon:'🧶', blurb:'A soft crochet bookmark available in multiple handmade designs.', price:'$5' },
-  { id:'origami-bookmark', name:'Origami Corner Bookmark', category:'origami', icon:'🔖', blurb:'A cute, simple corner bookmark that hugs the page you are saving.', price:'$2' }
+  { id:'caricature', name:'Personalized Caricature', category:'art', mark:'YOU?', blurb:'A personalized black-and-white caricature drawn from a photo we take at the stall—and delete after drawing.', price:'$12 one person · $17 two people' },
+  { id:'eagle', name:'Origami Eagle', category:'origami', image:'assets/products/origami-eagle.png', mark:'EAGLE', blurb:'An intricate, feathery eagle and one of our hardest folds to master.', price:'$8' },
+  { id:'dragon', name:'Origami Dragon v3', category:'origami', image:'assets/products/origami-dragon-v3.png', mark:'DRAGON', blurb:'An upgraded fair-exclusive dragon with a better neck and folded wings.', price:'$5' },
+  { id:'mouse', name:'Origami Mouse', category:'origami', image:'assets/products/origami-mouse.png', mark:'MOUSE', blurb:'A tiny, adorable mouse with very cool ears and a tail we really love.', price:'$6' },
+  { id:'kangaroo', name:'Origami Kangaroo', category:'origami', mark:'KNG', blurb:'No comment. Just KANGAROOOOO—in carefully folded paper.', price:'$5' },
+  { id:'turtle', name:'Origami Turtle', category:'origami', mark:'TRL', blurb:'A turtle with a dimensional shell and a satisfyingly flat top.', price:'$5' },
+  { id:'crochet-bookmark', name:'Crochet Bookmark', category:'crochet', mark:'YARN', blurb:'A soft crochet bookmark available in multiple handmade designs.', price:'$5' },
+  { id:'origami-bookmark', name:'Origami Corner Bookmark', category:'origami', mark:'PAGE', blurb:'A cute, simple corner bookmark that hugs the page you are saving.', price:'$2' }
 ];
+
+if ('scrollRestoration' in history) history.scrollRestoration='manual';
+if (!location.hash && !new URLSearchParams(location.search).has('track')) window.scrollTo(0,0);
 
 const state = {
   picks: JSON.parse(localStorage.getItem('sketchy-picks') || '[]').filter(id=>products.some(product=>product.id===id)),
   orders: JSON.parse(localStorage.getItem('sketchy-orders') || '[]').map(order=>({ ...order,email:order.email||'',trackCode:order.trackCode||'DEVICE-ONLY',updatedAt:order.updatedAt||order.createdAt })),
   orderFilter: 'active',
   staffPin: sessionStorage.getItem('sketchy-staff-pin') || '',
-  backendAvailable: true
+  backendAvailable: true,
+  user: null,
+  googleEnabled: false
 };
 let revealObserver;
 let trackingRefreshTimer;
@@ -27,6 +32,9 @@ const $ = (selector, root=document) => root.querySelector(selector);
 const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
 const save = () => { localStorage.setItem('sketchy-picks', JSON.stringify(state.picks)); localStorage.setItem('sketchy-orders', JSON.stringify(state.orders)); };
 const productById = id => products.find(p => p.id === id);
+const productVisual = (product, compact=false) => product.image
+  ? `<img src="${product.image}" alt="${product.name}" loading="lazy" />`
+  : `<span class="paper-art ${compact?'paper-art-small':''}" aria-hidden="true"><b>${product.mark}</b><small>${product.category==='crochet'?'HANDMADE YARN':'HANDMADE'}</small></span>`;
 
 async function api(path,options={}) {
   const headers={ 'Content-Type':'application/json',...(options.staff?{'X-Staff-Pin':state.staffPin}:{}),...(options.headers||{}) };
@@ -41,7 +49,7 @@ function renderProductStory() {
   $('#storyCards').innerHTML=products.map((p,i)=>`
     <article class="story-card${i===0?' is-current':''}${p.id==='caricature'?' featured-story':''}" data-story-index="${i}">
       <span class="story-number" aria-hidden="true">${String(i+1).padStart(2,'0')}</span>
-      <button class="story-object" data-product-surprise="${p.id}" type="button" aria-label="Play with the ${p.name}">${p.icon}</button>
+      <button class="story-object${p.image?' has-photo':''}" data-product-surprise="${p.id}" type="button" aria-label="Play with the ${p.name}">${productVisual(p)}</button>
       <div class="story-copy">
         <p class="eyebrow">${p.id==='caricature'?'★ Featured case':`Case ${String(i+1).padStart(2,'0')} · ${p.category}`}</p>
         <h2>${p.name}<em>${p.category==='origami'?'One sheet. A lot of personality.':p.category==='crochet'?'Soft, useful, and made by hand.':'Your face. Our funniest lines.'}</em></h2>
@@ -68,7 +76,7 @@ function renderDrawer() {
   $('#caseCount').dataset.count = state.picks.length;
   const box = $('#drawerItems');
   if (!state.picks.length) box.innerHTML = `<div class="empty-case"><span>＋</span><h3>No picks yet!</h3><p>Browse the collection and add anything that catches your eye.</p></div>`;
-  else box.innerHTML = state.picks.map(id => { const p=productById(id); return `<div class="drawer-item"><div class="mini-art">${p.icon}</div><div><h3>${p.name}</h3><p>${p.price}</p></div><button class="remove-item" data-remove="${id}" aria-label="Remove ${p.name}" type="button">×</button></div>`; }).join('');
+  else box.innerHTML = state.picks.map(id => { const p=productById(id); return `<div class="drawer-item"><div class="mini-art${p.image?' has-photo':''}">${productVisual(p,true)}</div><div><h3>${p.name}</h3><p>${p.price}</p></div><button class="remove-item" data-remove="${id}" aria-label="Remove ${p.name}" type="button">×</button></div>`; }).join('');
   $('#showAtStallBtn').disabled = !state.picks.length;
   $('#showAtStallBtn').style.opacity = state.picks.length ? '1' : '.45';
   $('#mobilePickCount').textContent=state.picks.length;
@@ -132,6 +140,61 @@ async function lookupOrder(code,silent=false) {
     history.replaceState(null,'',`${location.pathname}?track=${encodeURIComponent(code.trim())}`);
     clearInterval(trackingRefreshTimer);trackingRefreshTimer=setInterval(()=>lookupOrder(code,true),15000);
   } catch(error) { if(!silent)result.innerHTML=`<p><b>Case not found.</b><br>${escapeHtml(error.message)}</p>`; }
+}
+
+function openAccount() {
+  $('#accountOverlay').hidden=false;
+  document.body.style.overflow='hidden';
+  if(state.user) loadMyOrders();
+}
+function closeAccount() { $('#accountOverlay').hidden=true;document.body.style.overflow=''; }
+function renderAccount() {
+  const signedIn=Boolean(state.user);
+  $('#accountSignedOut').hidden=signedIn;
+  $('#accountSignedIn').hidden=!signedIn;
+  $('#accountNavBtn').lastChild.textContent=signedIn?'Account':'Sign in';
+  $('#mobileAccountBtn').classList.toggle('signed-in',signedIn);
+  if(!signedIn)return;
+  $('#accountName').textContent=state.user.name;
+  $('#accountEmail').textContent=state.user.email;
+  $('#accountAvatar').src=state.user.picture||'assets/logo.png';
+}
+async function loadMyOrders() {
+  const box=$('#accountOrders');
+  box.innerHTML='<p class="account-empty">Looking for your orders…</p>';
+  try {
+    const orders=await api('/my-orders');
+    if(!orders.length) { box.innerHTML='<p class="account-empty">No orders are connected to this Google email yet. Ask us to use this email when we enter your order at the stall.</p>';return; }
+    const labels={received:'Received',drawing:'Being made',ready:'Ready!', 'picked-up':'Picked up'};
+    box.innerHTML=orders.map(order=>`<button class="account-order" data-account-track="${order.trackCode}" type="button"><strong>#${order.number}</strong><span>${order.items.map(id=>productById(id)?.name).filter(Boolean).join(' · ')}</span><b>${labels[order.status]}</b></button>`).join('');
+  } catch(error) { box.innerHTML=`<p class="account-empty">${escapeHtml(error.message)}</p>`; }
+}
+function loadGoogleScript() {
+  if(window.google?.accounts?.id)return Promise.resolve();
+  return new Promise((resolve,reject)=>{
+    const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;script.defer=true;
+    script.onload=resolve;script.onerror=()=>reject(new Error('Google sign-in could not load.'));
+    document.head.appendChild(script);
+  });
+}
+async function setupGoogleSignIn() {
+  try {
+    const config=await api('/config');state.googleEnabled=Boolean(config.googleClientId);
+    try { const session=await api('/auth/me');state.user=session.user; } catch(error) { if(error.status!==401)throw error; }
+    renderAccount();
+    if(!state.googleEnabled) { $('#googleSignInNote').textContent='Google sign-in needs a client ID in Render before it can appear here.';return; }
+    await loadGoogleScript();
+    google.accounts.id.initialize({client_id:config.googleClientId,callback:async response=>{
+      try { const session=await api('/auth/google',{method:'POST',body:JSON.stringify({credential:response.credential})});state.user=session.user;renderAccount();loadMyOrders();toast(`Signed in as ${state.user.name}`); }
+      catch(error) { toast(error.message); }
+    }});
+    google.accounts.id.renderButton($('#googleSignInButton'),{theme:'outline',size:'large',shape:'pill',width:Math.min(360,window.innerWidth-72)});
+    $('#googleSignInNote').textContent='We only use your name and email to match your fair orders.';
+  } catch(error) { $('#googleSignInNote').textContent='Sign-in is temporarily unavailable. Tracking codes still work.'; }
+}
+async function signOut() {
+  try { await api('/auth/logout',{method:'POST'}); } catch (_) {}
+  window.google?.accounts?.id?.disableAutoSelect();state.user=null;renderAccount();toast('Signed out');
 }
 
 function burstConfetti() {
@@ -237,6 +300,7 @@ function setupScrollExperience() {
     const storyPosition=storyProgress*(products.length-1);
     const storyIndex=Math.max(0,Math.min(products.length-1,Math.round(storyPosition)));
     const storyActive=storyRect.top<68&&storyRect.bottom>68;
+    story.classList.toggle('story-started',storyRect.top<window.innerHeight*.72);
     const storyStage=$('.story-stage');
     const accent=products[storyIndex].category==='crochet'?'#ffb28e':products[storyIndex].category==='art'?'#f4f0e7':'#ee672d';
     storyStage.style.setProperty('--story-accent',accent);
@@ -285,12 +349,13 @@ function setupScrollExperience() {
 
 document.addEventListener('click', async e => {
   const storyJump=e.target.closest('[data-story-jump]'); if(storyJump){ const story=$('.product-story'),distance=story.offsetHeight-window.innerHeight,progress=Number(storyJump.dataset.storyJump)/(products.length-1); window.scrollTo({top:story.offsetTop+distance*progress,behavior:'smooth'}); }
-  const surprise=e.target.closest('[data-product-surprise]'); if(surprise){ const product=productById(surprise.dataset.productSurprise);surprise.classList.remove('is-booping');void surprise.offsetWidth;surprise.classList.add('is-booping');toast(`${product.icon} ${['Highly suspicious craftsmanship.','Evidence: definitely handmade.','Tiny object. Huge personality.'][Math.floor(Math.random()*3)]}`); }
-  const jump=e.target.closest('[data-jump]'); if(jump) $(jump.dataset.jump)?.scrollIntoView({behavior:'smooth'});
+  const surprise=e.target.closest('[data-product-surprise]'); if(surprise){ const product=productById(surprise.dataset.productSurprise);surprise.classList.remove('is-booping');void surprise.offsetWidth;surprise.classList.add('is-booping');toast(`${product.name}: ${['highly suspicious craftsmanship.','definitely handmade evidence.','tiny object, huge personality.'][Math.floor(Math.random()*3)]}`); }
+  const jump=e.target.closest('[data-jump]'); if(jump){ e.preventDefault();$(jump.dataset.jump)?.scrollIntoView({behavior:'smooth'}); }
   const add=e.target.closest('[data-product]'); if(add) togglePick(add.dataset.product);
   const remove=e.target.closest('[data-remove]'); if(remove) togglePick(remove.dataset.remove);
   const orderFilter=e.target.closest('[data-status]'); if(orderFilter){ state.orderFilter=orderFilter.dataset.status; $$('.order-filters button').forEach(b=>b.classList.toggle('active',b===orderFilter)); renderOrders(); }
   const copy=e.target.closest('[data-copy-code]'); if(copy){ await navigator.clipboard?.writeText(copy.dataset.copyCode); toast('Tracking code copied'); }
+  const accountOrder=e.target.closest('[data-account-track]'); if(accountOrder){ closeAccount();openTracking(accountOrder.dataset.accountTrack); }
   const del=e.target.closest('[data-delete-order]'); if(del && confirm('Delete this order?')) { try { if(state.backendAvailable)await api(`/orders/${del.dataset.deleteOrder}`,{method:'DELETE',staff:true}); state.orders=state.orders.filter(o=>o.id!==del.dataset.deleteOrder);save();renderOrders(); } catch(error){ toast(error.message); } }
 });
 document.addEventListener('change', async e => {
@@ -313,6 +378,7 @@ $('#orderForm').addEventListener('submit', async e => {
 });
 $('#caseButton').addEventListener('click',openDrawer); $('#bottomPicksBtn').addEventListener('click',openDrawer); $('#closeDrawer').addEventListener('click',closeDrawer); $('#scrim').addEventListener('click',closeDrawer);
 $('#mobilePicksBtn').addEventListener('click',openDrawer); $('#mobileTrackBtn').addEventListener('click',()=>openTracking());
+$('#mobileAccountBtn').addEventListener('click',openAccount);$('#accountNavBtn').addEventListener('click',openAccount);$('#closeAccount').addEventListener('click',closeAccount);$('#accountOverlay').addEventListener('click',e=>{if(e.target===$('#accountOverlay'))closeAccount();});$('#accountLogout').addEventListener('click',signOut);
 $('#staffNavBtn').addEventListener('click',showStaff); $('#backStoreBtn').addEventListener('click',showStore);
 $('#trackNavBtn').addEventListener('click',()=>openTracking()); $('#trackingFab').addEventListener('click',()=>openTracking()); $('#closeTracking').addEventListener('click',closeTracking); $('#trackingOverlay').addEventListener('click',e=>{if(e.target===$('#trackingOverlay'))closeTracking();});
 $('#trackingForm').addEventListener('submit',e=>{e.preventDefault();lookupOrder(new FormData(e.currentTarget).get('trackingCode'));});
@@ -321,10 +387,14 @@ $('#skipFilm').addEventListener('click',finishOpeningFilm);
 $('#projectStamp').addEventListener('click',()=>{ const messages=['Summer project classified.','Built with paper, yarn, ink, and snacks.','Two young makers. Zero boring products.','Secret unlocked: creativity is the whole operation.'];toast(messages[projectTaps%messages.length]);projectTaps+=1;if(projectTaps%4===0)burstConfetti(); });
 $('.brand').addEventListener('click',()=>{logoTaps+=1;if(logoTaps===3){toast('Logo tapped 3× — extremely sketchy behavior.');burstConfetti();logoTaps=0;} });
 $('#clearDoneBtn').addEventListener('click',async()=>{ const count=state.orders.filter(o=>o.status==='picked-up').length; if(count && confirm(`Clear ${count} picked-up order${count===1?'':'s'}?`)){ try { if(state.backendAvailable)await api('/orders/picked-up',{method:'DELETE',staff:true});state.orders=state.orders.filter(o=>o.status!=='picked-up');save();renderOrders(); } catch(error){toast(error.message);} } });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeDrawer(); closeTracking();finishOpeningFilm(); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeDrawer();closeTracking();closeAccount();finishOpeningFilm(); } });
 setInterval(updateClock,30000);
 renderProductStory(); renderDrawer(); syncPickButtons(); renderStaffProducts(); renderOrders(); updateClock();
 setupOpeningFilm();
 setupScrollExperience();
 setupPlayfulInteractions();
+setupGoogleSignIn();
 const trackingFromUrl=new URLSearchParams(location.search).get('track'); if(trackingFromUrl) openTracking(trackingFromUrl);
+if(location.hash==='#account') openAccount();
+if(location.hash==='#case-files') $('#case-files').classList.add('story-started');
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) window.addEventListener('load',()=>navigator.serviceWorker.register('/service-worker.js').catch(()=>{}),{once:true});

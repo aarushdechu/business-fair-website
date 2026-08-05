@@ -1,0 +1,14 @@
+{
+  "name": "sketchy-business-app-store",
+  "private": true,
+  "scripts": {
+    "create": "npx cap add ios",
+    "open": "npx cap open ios",
+    "sync": "npx cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0"
+  }
+}

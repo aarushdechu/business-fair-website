@@ -4,9 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#171714" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Sketchy Business" />
     <meta name="description" content="Browse handmade origami, crochet creations, and personalized caricatures from A Sketchy Business." />
     <title>A Sketchy Business — Handmade & hand-drawn</title>
     <link rel="icon" href="assets/logo.png" />
+    <link rel="apple-touch-icon" href="assets/logo.png" />
+    <link rel="manifest" href="manifest.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Rock+Salt&display=swap" rel="stylesheet" />
@@ -37,7 +42,7 @@
       <button data-jump="#case-files" type="button"><span>Goods</span></button>
       <button data-jump="#how-it-works" type="button"><span>How it works</span></button>
     </nav>
-    <button class="tracking-fab" id="trackingFab" type="button"><span>◎</span> Track my order</button>
+    <button class="tracking-fab button-49" id="trackingFab" type="button" data-glitch="TRACK MY ORDER">Track my order <span>◎</span></button>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="A Sketchy Business home">
         <span class="brand-mark"><img src="assets/logo.png" alt="" /></span>
@@ -48,6 +53,7 @@
         <a href="#project"><span>02</span>The project</a>
         <a href="#how-it-works"><span>03</span>How it works</a>
         <button class="nav-track" id="trackNavBtn" type="button"><span>04</span>Track order</button>
+        <button class="nav-account" id="accountNavBtn" type="button"><span>05</span>Sign in</button>
         <button class="nav-staff" id="staffNavBtn" type="button" aria-label="Open staff board">⌘</button>
       </nav>
       <button class="case-button button-86" id="caseButton" type="button" aria-label="Open your picks">
@@ -60,6 +66,7 @@
       <button data-jump="#case-files" type="button"><span>✦</span>Shop</button>
       <button id="mobileTrackBtn" type="button"><span>◎</span>Track</button>
       <button id="mobilePicksBtn" type="button"><span>＋</span>Picks <b id="mobilePickCount">0</b></button>
+      <button id="mobileAccountBtn" type="button"><span>●</span>Me</button>
     </nav>
 
     <main id="storeView">
@@ -70,8 +77,8 @@
           <h1>Something <em>sketchy</em><br />is going on.</h1>
           <p class="hero-lede">Hand-folded creatures, cozy crochet, and one-of-a-kind caricatures—made by two young artists, right here at the fair.</p>
           <div class="hero-actions">
-            <a class="button-49" href="#case-files" data-glitch="OPEN THE CASE FILES">Investigate the goods <span>↘</span></a>
-            <a class="button-55" href="#how-it-works">How ordering works <span>→</span></a>
+            <a class="button-49" href="#case-files" data-jump="#case-files" data-glitch="OPEN THE CASE FILES">Investigate the goods <span>↘</span></a>
+            <a class="button-55" href="#how-it-works" data-jump="#how-it-works">How ordering works <span>→</span></a>
           </div>
           <div class="maker-note note-one"><b>Made by hand.</b><br />No factories. No funny business.<br /><span>(Okay, a little funny business.)</span></div>
           <div class="maker-note note-two"><b>One at a time.</b><br />Every fold is a little different.</div>
@@ -107,7 +114,7 @@
         <div class="feature-copy">
           <p class="eyebrow">The main suspect</p>
           <h2>You, but <em>funnier.</em></h2>
-          <p>We take a quick photo at the stall, use it to draw your black-and-white caricature, and delete it afterward—with proof if you want it. One person is $12, and each extra person is $7, up to three people.</p>
+          <p>We take a quick photo at the stall, use it to draw your black-and-white caricature, and delete it afterward—with proof if you want it. One person is $12. Two people are $17.</p>
           <button class="button button-orange quick-add" data-product="caricature" type="button">Add a caricature to my picks <span>＋</span></button>
         </div>
         <div class="feature-stamp">Drawn<br />on site!</div>
@@ -177,6 +184,23 @@
           <button class="button button-orange full" type="submit">Check my order <span>→</span></button>
         </form>
         <div class="tracking-result" id="trackingResult" hidden></div>
+      </section>
+    </div>
+    <div class="account-overlay" id="accountOverlay" hidden>
+      <section class="account-card" role="dialog" aria-modal="true" aria-labelledby="accountTitle">
+        <button class="icon-button" id="closeAccount" type="button" aria-label="Close">×</button>
+        <p class="eyebrow">Your pocket case file</p>
+        <h2 id="accountTitle">Sign in on<br /><em>this phone.</em></h2>
+        <div id="accountSignedOut">
+          <p>Google sign-in is optional. It can show orders connected to your email without making you type a tracking code.</p>
+          <div id="googleSignInButton"></div>
+          <p class="account-note" id="googleSignInNote">Checking sign-in availability…</p>
+        </div>
+        <div id="accountSignedIn" hidden>
+          <div class="account-person"><img id="accountAvatar" alt="" /><div><strong id="accountName"></strong><span id="accountEmail"></span></div></div>
+          <div class="account-orders" id="accountOrders"></div>
+          <button class="button-55 account-logout" id="accountLogout" type="button">Sign out</button>
+        </div>
       </section>
     </div>
     <footer><p>Handmade with paper, yarn &amp; questionable amounts of creativity.</p><a href="#top">Back to top ↑</a></footer>

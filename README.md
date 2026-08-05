@@ -20,10 +20,22 @@ The included `render.yaml` creates a Node web service and PostgreSQL database. C
 - `STAFF_PIN`: the private PIN used to open the staff board.
 - `RESEND_API_KEY`: optional; enables status emails.
 - `EMAIL_FROM`: optional; for example `A Sketchy Business <orders@your-verified-domain.com>`.
+- `GOOGLE_CLIENT_ID`: optional; enables Google sign-in for customers.
+- `SESSION_SECRET`: a long random secret used to sign login cookies. The Render Blueprint generates this automatically.
 
 The existing static Render service cannot become a web service in place. Create the Blueprint service, verify it works, then point your custom domain to the new service if you use one.
 
 The server creates its `orders` table automatically. Customers receive a random private tracking code. The public tracking endpoint returns only the order name, items, status, and timestamps; email addresses and staff notes remain private.
+
+## Google sign-in
+
+Create a **Web application** OAuth client in Google Cloud Console. Add `https://a-sketchy-business.onrender.com` as an authorized JavaScript origin, then copy its client ID into Render as `GOOGLE_CLIENT_ID`. No client secret is placed in the browser.
+
+Sign-in is optional. The server verifies Google's ID token, stores a signed HTTP-only session cookie, and only uses the verified email to find orders entered with the same email. Tracking codes continue to work for everyone.
+
+## Installable and store apps
+
+The web app includes a manifest and service worker, so it can be installed from a phone browser with **Add to Home Screen**. Native Apple and Android shell setup is under `mobile/`; read `mobile/README.md` before starting either store submission.
 
 ## Email setup
 

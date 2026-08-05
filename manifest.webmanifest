@@ -1,0 +1,14 @@
+{
+  "name": "A Sketchy Business",
+  "short_name": "Sketchy",
+  "description": "Browse handmade fair products, save picks, and track your order.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f0e7",
+  "theme_color": "#181816",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/assets/logo.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
