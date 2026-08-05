@@ -226,9 +226,9 @@ header .nav-account { display:flex;align-items:center;gap:8px;padding:9px 12px;b
 header .nav-account span { color:var(--orange);font-size:9px;letter-spacing:.08em; }
 header .nav-account:hover { background:white;border-color:var(--ink);transform:translateY(-3px) rotate(1deg);box-shadow:3px 3px 0 var(--orange); }
 
-.story-object.has-photo { overflow:hidden;border:1px solid rgba(244,240,231,.68);border-radius:50%;background:#f7f5f1;box-shadow:0 22px 45px rgba(0,0,0,.28); }
+.story-object.has-photo { overflow:hidden;border:1px solid rgba(244,240,231,.42);border-radius:50%;background:transparent;box-shadow:0 22px 45px rgba(0,0,0,.18); }
 .story-object.has-photo img { width:86%;height:86%;margin:auto;object-fit:contain;display:block;filter:saturate(.94) contrast(1.03); }
-.story-object.has-photo::before { inset:10px;border-color:rgba(24,24,22,.3);z-index:1; }
+.story-object.has-photo::before { inset:10px;border-color:rgba(244,240,231,.2);z-index:1; }
 .story-object.has-photo::after { display:none; }
 .paper-art { width:75%;aspect-ratio:1;display:grid;place-items:center;align-content:center;gap:8px;position:relative;background:#f0b164;color:var(--ink);clip-path:polygon(8% 2%,94% 7%,100% 88%,82% 100%,4% 93%,0 15%);box-shadow:inset 0 0 0 2px rgba(24,24,22,.45);transform:rotate(-4deg); }
 .paper-art::before,.paper-art::after { content:"";position:absolute;border:1px dashed rgba(24,24,22,.45); }
