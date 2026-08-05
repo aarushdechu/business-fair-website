@@ -1,5 +1,5 @@
-const CACHE='sketchy-shell-v7';
-const SHELL=['/','/styles.css','/app.js','/manifest.webmanifest','/assets/logo.png','/assets/products/origami-eagle-display.png','/assets/products/origami-dragon-v3-display.png','/assets/products/origami-mouse-display.png','/assets/products/origami-kangaroo-display.png'];
+const CACHE='sketchy-shell-v8';
+const SHELL=['/','/styles.css','/app.js','/manifest.webmanifest','/assets/logo.png','/assets/products/origami-eagle-display.png','/assets/products/origami-dragon-v3-display.png','/assets/products/origami-mouse-display.png','/assets/products/origami-kangaroo-display.png','/assets/products/origami-turtle-display.png'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
