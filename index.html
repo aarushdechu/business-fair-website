@@ -13,15 +13,30 @@
     <link rel="stylesheet" href="styles.css" />
     <script src="app.js" defer></script>
   </head>
-  <body class="intro-active">
+  <body class="film-playing">
     <div class="noise" aria-hidden="true"></div>
     <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+    <section class="opening-film" id="openingFilm" aria-label="A Sketchy Business animated introduction">
+      <div class="film-grid" aria-hidden="true"></div>
+      <p class="film-kicker">A curious case of handmade things</p>
+      <div class="film-word film-paper" aria-hidden="true">PAPER</div>
+      <div class="film-word film-yarn" aria-hidden="true">YARN</div>
+      <div class="film-word film-ink" aria-hidden="true">INK</div>
+      <div class="film-sketchy" aria-hidden="true"><span>SOMETHING</span><b>SKETCHY</b></div>
+      <div class="film-reveal">
+        <img src="assets/logo.png" alt="" />
+        <p>Made by kids · made by hand</p>
+        <h1>Welcome to<br /><em>A Sketchy Business.</em></h1>
+      </div>
+      <div class="film-progress" aria-hidden="true"><span></span></div>
+      <button class="film-skip" id="skipFilm" type="button">Skip intro →</button>
+    </section>
     <nav class="case-nav" id="caseNav" aria-label="Page sections">
-      <button class="active" data-jump="#top" type="button"><span>Intro</span></button>
+      <button class="active" data-jump="#top" type="button"><span>Home</span></button>
+      <button data-jump="#project" type="button"><span>Project</span></button>
       <button data-jump="#case-files" type="button"><span>Goods</span></button>
       <button data-jump="#how-it-works" type="button"><span>How it works</span></button>
     </nav>
-    <button class="clue-hud" id="clueHud" type="button" aria-label="Secret case: 0 of 3 clues found"><span>⌕</span><b>Secret case</b><em><span id="clueCount">0</span>/3</em></button>
     <button class="tracking-fab" id="trackingFab" type="button"><span>◎</span> Track my order</button>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="A Sketchy Business home">
@@ -29,46 +44,27 @@
         <span>A Sketchy Business</span>
       </a>
       <nav aria-label="Main navigation">
-        <a href="#case-files">The goods</a>
-        <a href="#how-it-works">How it works</a>
-        <button class="nav-track" id="trackNavBtn" type="button">Track order</button>
-        <button class="nav-staff" id="staffNavBtn" type="button">Staff board</button>
+        <a href="#case-files"><span>01</span>The goods</a>
+        <a href="#project"><span>02</span>The project</a>
+        <a href="#how-it-works"><span>03</span>How it works</a>
+        <button class="nav-track" id="trackNavBtn" type="button"><span>04</span>Track order</button>
+        <button class="nav-staff" id="staffNavBtn" type="button" aria-label="Open staff board">⌘</button>
       </nav>
       <button class="case-button button-86" id="caseButton" type="button" aria-label="Open your picks">
         <span class="case-label">My picks</span><span class="case-count" id="caseCount" data-count="0">0</span>
       </button>
     </header>
 
-    <main id="storeView">
-      <section class="intro-sequence" id="opening" aria-label="A Sketchy Business introduction">
-        <div class="intro-stage">
-          <div class="intro-grid" aria-hidden="true"></div>
-          <p class="intro-kicker">A curious case of handmade things</p>
-          <div class="intro-title intro-title-one" aria-hidden="true">SOMETHING</div>
-          <div class="intro-title intro-title-two" aria-hidden="true">SKETCHY</div>
-          <div class="intro-orbits" aria-label="Our three materials">
-            <button class="material-orb orb-paper" type="button" data-orb="Paper" aria-label="Paper: folded into origami">
-              <span class="orb-symbol">◇</span><b>Paper</b><small>fold it</small>
-            </button>
-            <button class="material-orb orb-yarn" type="button" data-orb="Yarn" aria-label="Yarn: stitched into crochet">
-              <span class="orb-symbol">⌁</span><b>Yarn</b><small>stitch it</small>
-            </button>
-            <button class="material-orb orb-ink" type="button" data-orb="Ink" aria-label="Ink: drawn into caricatures">
-              <span class="orb-symbol">✦</span><b>Ink</b><small>sketch it</small>
-            </button>
-          </div>
-          <div class="intro-reveal">
-            <img src="assets/logo.png" alt="" />
-            <p>Paper. Yarn. Ink.</p>
-            <h1>Welcome to<br /><em>A Sketchy Business.</em></h1>
-          </div>
-          <div class="intro-scroll" aria-hidden="true"><span></span> Scroll to enter</div>
-        </div>
-      </section>
+    <nav class="mobile-dock" id="mobileDock" aria-label="Mobile navigation">
+      <button data-jump="#top" type="button"><span>⌂</span>Home</button>
+      <button data-jump="#case-files" type="button"><span>✦</span>Shop</button>
+      <button id="mobileTrackBtn" type="button"><span>◎</span>Track</button>
+      <button id="mobilePicksBtn" type="button"><span>＋</span>Picks <b id="mobilePickCount">0</b></button>
+    </nav>
 
+    <main id="storeView">
       <section class="hero" id="top">
         <img class="hero-art hero-logo" src="assets/logo.png" alt="A Sketchy Business logo" />
-        <button class="hidden-clue clue-hero" data-clue="spy-mark" type="button" aria-label="Hidden maker mark">✦</button>
         <div class="hero-copy">
           <p class="eyebrow"><span>Case file 001</span> Kids making cool stuff</p>
           <h1>Something <em>sketchy</em><br />is going on.</h1>
@@ -87,46 +83,19 @@
         <div>ORIGAMI <span>✦</span> CARICATURES <span>✦</span> CROCHET <span>✦</span> MADE BY KIDS <span>✦</span> ORIGAMI <span>✦</span> CARICATURES</div>
       </section>
 
-      <section class="product-story" id="overview" aria-label="A scrolling tour of everything we make">
+      <section class="project-intro" id="project">
+        <div class="project-index">SUMMER<br />PROJECT<br />2026</div>
+        <div class="project-copy"><p class="eyebrow">Behind the business</p><h2>This is my<br /><em>summer project.</em></h2><p>This is a temporary introduction about why we started A Sketchy Business, what we are learning, and how every piece is made. More of the real story is coming soon.</p></div>
+        <button class="project-stamp" id="projectStamp" type="button" aria-label="Tap for a secret">Tap me<br /><span>✦</span></button>
+      </section>
+
+      <section class="product-story" id="case-files" aria-label="A scrolling tour of everything we make">
         <div class="story-stage">
           <div class="story-grid" aria-hidden="true"></div>
-          <div class="story-topline"><span>Maker roll call</span><b id="storyCounter">01 / 09</b></div>
+          <div class="story-topline"><span>Shop the collection</span><b id="storyCounter">01 / 08</b></div>
           <div class="story-cards" id="storyCards"></div>
           <div class="story-rail" id="storyRail" aria-label="Product overview progress"></div>
           <div class="story-scroll-cue" aria-hidden="true">Keep scrolling <span>↓</span></div>
-        </div>
-      </section>
-
-      <section class="catalog" id="case-files">
-        <div class="catalog-watermark" aria-hidden="true">THE GOODS · THE GOODS ·</div>
-        <button class="hidden-clue clue-catalog" data-clue="paper-mark" type="button" aria-label="Hidden maker mark">⌁</button>
-        <div class="catalog-stage">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Evidence locker</p>
-              <h2>Pick your <em>favorite.</em></h2>
-            </div>
-            <p>Scroll to inspect every case file. Add your favorites, then show the list to us at the stall.</p>
-          </div>
-          <div class="filter-row" role="group" aria-label="Filter products">
-            <button class="filter active" data-filter="all" type="button">All the goods</button>
-            <button class="filter" data-filter="origami" type="button">Origami</button>
-            <button class="filter" data-filter="crochet" type="button">Crochet</button>
-            <button class="filter" data-filter="art" type="button">Caricatures</button>
-            <span class="horizontal-hint">Scroll to investigate <b>→</b></span>
-          </div>
-          <div class="product-grid" id="productGrid"></div>
-        </div>
-      </section>
-
-      <section class="case-transition" aria-label="Handmade materials">
-        <div class="case-transition-stage">
-          <div class="transition-iris" aria-hidden="true"></div>
-          <p class="transition-kicker">Every clue starts with</p>
-          <div class="kinetic-word word-paper">PAPER</div>
-          <div class="kinetic-word word-yarn">YARN</div>
-          <div class="kinetic-word word-ink">INK</div>
-          <div class="transition-verdict"><span>01 / 03</span><h2>Three materials.<br /><em>Infinite suspects.</em></h2></div>
         </div>
       </section>
 
@@ -138,19 +107,18 @@
         <div class="feature-copy">
           <p class="eyebrow">The main suspect</p>
           <h2>You, but <em>funnier.</em></h2>
-          <p>Sit for a quick portrait and we'll turn your best features into a totally unique caricature. We’ll take your name, give you an order number, and call you back when the masterpiece is ready.</p>
+          <p>We take a quick photo at the stall, use it to draw your black-and-white caricature, and delete it afterward—with proof if you want it. One person is $12, and each extra person is $7, up to three people.</p>
           <button class="button button-orange quick-add" data-product="caricature" type="button">Add a caricature to my picks <span>＋</span></button>
         </div>
         <div class="feature-stamp">Drawn<br />on site!</div>
       </section>
 
       <section class="how" id="how-it-works">
-        <button class="hidden-clue clue-how" data-clue="pencil-mark" type="button" aria-label="Hidden maker mark">✦</button>
         <div class="section-heading compact">
           <div><p class="eyebrow">The operation</p><h2>How it <em>works.</em></h2></div>
         </div>
         <div class="steps">
-          <article><span>01</span><div class="step-icon">⌕</div><h3>Browse the clues</h3><p>Look through everything here and add your favorites to “My picks.”</p></article>
+          <article><span>01</span><div class="step-icon">⌕</div><h3>Browse the collection</h3><p>Scroll through everything here and add your favorites directly to “My picks.”</p></article>
           <article><span>02</span><div class="step-icon">⌖</div><h3>Visit the stall</h3><p>Show us your list. We'll confirm what’s available and take your order.</p></article>
           <article><span>03</span><div class="step-icon">✓</div><h3>Collect your treasure</h3><p>Take ready-made items now. For a caricature, watch the board for your order number.</p></article>
         </div>
@@ -209,15 +177,6 @@
           <button class="button button-orange full" type="submit">Check my order <span>→</span></button>
         </form>
         <div class="tracking-result" id="trackingResult" hidden></div>
-      </section>
-    </div>
-    <div class="clue-overlay" id="clueOverlay" hidden>
-      <section class="clue-badge" role="dialog" aria-modal="true" aria-labelledby="clueTitle">
-        <button class="icon-button" id="closeClueBadge" type="button" aria-label="Close">×</button>
-        <span class="badge-icon">⌕</span><p class="eyebrow">Case cracked</p>
-        <h2 id="clueTitle">Junior Sketch<br /><em>Detective!</em></h2>
-        <p>You found all three secret maker marks. Show this badge at the stall and tell us which clue was trickiest.</p>
-        <button class="button button-orange" id="huntAgainBtn" type="button">Hunt again <span>↻</span></button>
       </section>
     </div>
     <footer><p>Handmade with paper, yarn &amp; questionable amounts of creativity.</p><a href="#top">Back to top ↑</a></footer>

@@ -10,7 +10,7 @@ const app = express();
 const port = Number(process.env.PORT || 3000);
 const root = path.dirname(fileURLToPath(import.meta.url));
 const statuses = new Set(['received', 'drawing', 'ready', 'picked-up']);
-const productIds = new Set(['eagle','dragon','mouse','kangaroo','turtle','origami-bookmark','heart-keychain','crochet-bookmark','caricature']);
+const productIds = new Set(['eagle','dragon','mouse','kangaroo','turtle','origami-bookmark','crochet-bookmark','caricature']);
 const pool = process.env.DATABASE_URL ? new Pool({ connectionString:process.env.DATABASE_URL, ssl:process.env.NODE_ENV==='production'?{rejectUnauthorized:false}:false }) : null;
 const requestWindows = new Map();
 

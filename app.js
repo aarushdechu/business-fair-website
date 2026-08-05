@@ -1,31 +1,31 @@
 const products = [
-  { id:'caricature', name:'Personalized Caricature', category:'art', icon:'✍️', blurb:'A funny, one-of-one portrait drawn just for you.', price:'Made on site' },
-  { id:'eagle', name:'Origami Eagle', category:'origami', icon:'🦅', blurb:'A sharp-winged paper bird ready to soar.', price:'Ask at stall' },
-  { id:'dragon', name:'Origami Dragon', category:'origami', icon:'🐉', blurb:'A fierce little desk guardian with folded wings.', price:'Ask at stall' },
-  { id:'mouse', name:'Origami Mouse', category:'origami', icon:'🐭', blurb:'Tiny, curious, and suspiciously good at hiding.', price:'Ask at stall' },
-  { id:'kangaroo', name:'Origami Kangaroo', category:'origami', icon:'🦘', blurb:'A pocket-sized hopper, folded by hand.', price:'Ask at stall' },
-  { id:'turtle', name:'Origami Turtle', category:'origami', icon:'🐢', blurb:'Slow, steady, and made from one clever sheet.', price:'Ask at stall' },
-  { id:'origami-bookmark', name:'Origami Bookmark', category:'origami', icon:'🔖', blurb:'A colorful page-corner companion for your next case.', price:'Ask at stall' },
-  { id:'heart-keychain', name:'Crochet Heart Keychain', category:'crochet', icon:'🧡', blurb:'A soft little heart to take everywhere.', price:'Ask at stall' },
-  { id:'crochet-bookmark', name:'Crochet Bookmark', category:'crochet', icon:'🧶', blurb:'A cozy, handmade way to save your page.', price:'Ask at stall' }
+  { id:'caricature', name:'Personalized Caricature', category:'art', icon:'✍️', blurb:'A personalized black-and-white caricature drawn from a photo we take at the stall—and delete after drawing.', price:'$12 · +$7 per extra person (max 3)' },
+  { id:'eagle', name:'Origami Eagle', category:'origami', icon:'🦅', blurb:'An intricate, feathery eagle and one of our hardest folds to master.', price:'$8' },
+  { id:'dragon', name:'Origami Dragon v3', category:'origami', icon:'🐉', blurb:'An upgraded fair-exclusive dragon with a better neck and folded wings.', price:'$5' },
+  { id:'mouse', name:'Origami Mouse', category:'origami', icon:'🐭', blurb:'A tiny, adorable mouse with very cool ears and a tail we really love.', price:'$6' },
+  { id:'kangaroo', name:'Origami Kangaroo', category:'origami', icon:'🦘', blurb:'No comment. Just KANGAROOOOO—in carefully folded paper.', price:'$5' },
+  { id:'turtle', name:'Origami Turtle', category:'origami', icon:'🐢', blurb:'A turtle with a dimensional shell and a satisfyingly flat top.', price:'$5' },
+  { id:'crochet-bookmark', name:'Crochet Bookmark', category:'crochet', icon:'🧶', blurb:'A soft crochet bookmark available in multiple handmade designs.', price:'$5' },
+  { id:'origami-bookmark', name:'Origami Corner Bookmark', category:'origami', icon:'🔖', blurb:'A cute, simple corner bookmark that hugs the page you are saving.', price:'$2' }
 ];
 
 const state = {
-  picks: JSON.parse(localStorage.getItem('sketchy-picks') || '[]'),
+  picks: JSON.parse(localStorage.getItem('sketchy-picks') || '[]').filter(id=>products.some(product=>product.id===id)),
   orders: JSON.parse(localStorage.getItem('sketchy-orders') || '[]').map(order=>({ ...order,email:order.email||'',trackCode:order.trackCode||'DEVICE-ONLY',updatedAt:order.updatedAt||order.createdAt })),
-  clues: JSON.parse(localStorage.getItem('sketchy-clues') || '[]'),
   orderFilter: 'active',
   staffPin: sessionStorage.getItem('sketchy-staff-pin') || '',
   backendAvailable: true
 };
 let revealObserver;
-let catalogTravel = 0;
 let trackingRefreshTimer;
 let staffRefreshTimer;
+let filmTimer;
+let projectTaps=0;
+let logoTaps=0;
 
 const $ = (selector, root=document) => root.querySelector(selector);
 const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
-const save = () => { localStorage.setItem('sketchy-picks', JSON.stringify(state.picks)); localStorage.setItem('sketchy-orders', JSON.stringify(state.orders)); localStorage.setItem('sketchy-clues', JSON.stringify(state.clues)); };
+const save = () => { localStorage.setItem('sketchy-picks', JSON.stringify(state.picks)); localStorage.setItem('sketchy-orders', JSON.stringify(state.orders)); };
 const productById = id => products.find(p => p.id === id);
 
 async function api(path,options={}) {
@@ -37,25 +37,15 @@ async function api(path,options={}) {
 }
 async function loadOrders() { state.orders=await api('/orders',{staff:true}); renderOrders(); }
 
-function renderProducts(filter='all') {
-  $('#productGrid').innerHTML = products.map((p,i) => `
-    <article class="product-card${p.id==='caricature'?' featured-product':''} ${filter !== 'all' && p.category !== filter ? 'hidden' : ''}" data-category="${p.category}">
-      <div class="product-art"><span class="card-tag">${p.id==='caricature'?'★ Featured · drawn on site':`File ${String(i+1).padStart(2,'0')} · ${p.category}`}</span><span class="emoji" aria-hidden="true">${p.icon}</span><span class="card-glint" aria-hidden="true"></span></div>
-      <div class="card-body"><h3>${p.name}</h3><p>${p.blurb}</p><div class="card-bottom"><span class="price">${p.price}</span><button class="add-button ${state.picks.includes(p.id)?'added':''}" data-product="${p.id}" type="button" aria-label="${state.picks.includes(p.id)?`Remove ${p.name} from my picks`:`Add ${p.name} to my picks`}"><span class="add-label">${state.picks.includes(p.id)?'In my picks':'Add to picks'}</span><span class="add-icon" aria-hidden="true"><b class="icon-plus">＋</b><b class="icon-check">✓</b></span></button></div></div>
-    </article>`).join('');
-  if (revealObserver) requestAnimationFrame(() => observeReveals($('#productGrid')));
-  requestAnimationFrame(()=>{ updateCatalogMetrics(); window.dispatchEvent(new Event('scroll')); });
-}
-
 function renderProductStory() {
   $('#storyCards').innerHTML=products.map((p,i)=>`
     <article class="story-card${i===0?' is-current':''}${p.id==='caricature'?' featured-story':''}" data-story-index="${i}">
       <span class="story-number" aria-hidden="true">${String(i+1).padStart(2,'0')}</span>
-      <div class="story-object" aria-hidden="true">${p.icon}</div>
+      <button class="story-object" data-product-surprise="${p.id}" type="button" aria-label="Play with the ${p.name}">${p.icon}</button>
       <div class="story-copy">
         <p class="eyebrow">${p.id==='caricature'?'★ Featured case':`Case ${String(i+1).padStart(2,'0')} · ${p.category}`}</p>
         <h2>${p.name}<em>${p.category==='origami'?'One sheet. A lot of personality.':p.category==='crochet'?'Soft, useful, and made by hand.':'Your face. Our funniest lines.'}</em></h2>
-        <p>${p.blurb}</p><span class="story-price">${p.price}</span>
+        <p>${p.blurb}</p><div class="story-actions"><span class="story-price">${p.price}</span><button class="story-add${state.picks.includes(p.id)?' added':''}" data-product="${p.id}" type="button">${state.picks.includes(p.id)?'✓ In my picks':'+ Add to picks'}</button></div>
       </div>
     </article>`).join('');
   $('#storyRail').innerHTML=products.map((p,i)=>`<button class="story-dot${i===0?' is-current':''}" type="button" data-story-jump="${i}" aria-label="Show ${p.name}"></button>`).join('');
@@ -65,17 +55,23 @@ function togglePick(id) {
   const index = state.picks.indexOf(id);
   if (index >= 0) { state.picks.splice(index,1); toast('Removed from your picks'); }
   else { state.picks.push(id); toast(`${productById(id).name} added!`); }
-  save(); renderProducts($('.filter.active')?.dataset.filter || 'all'); renderDrawer();
+  save(); syncPickButtons(); renderDrawer();
+}
+
+function syncPickButtons() {
+  $$('[data-product]').forEach(button=>{ const added=state.picks.includes(button.dataset.product);button.classList.toggle('added',added);if(button.classList.contains('story-add'))button.textContent=added?'✓ In my picks':'+ Add to picks'; });
+  $('#mobilePickCount').textContent=state.picks.length;
 }
 
 function renderDrawer() {
   $('#caseCount').textContent = state.picks.length;
   $('#caseCount').dataset.count = state.picks.length;
   const box = $('#drawerItems');
-  if (!state.picks.length) box.innerHTML = `<div class="empty-case"><span>⌕</span><h3>No clues yet!</h3><p>Browse the goods and add anything that catches your eye.</p></div>`;
+  if (!state.picks.length) box.innerHTML = `<div class="empty-case"><span>＋</span><h3>No picks yet!</h3><p>Browse the collection and add anything that catches your eye.</p></div>`;
   else box.innerHTML = state.picks.map(id => { const p=productById(id); return `<div class="drawer-item"><div class="mini-art">${p.icon}</div><div><h3>${p.name}</h3><p>${p.price}</p></div><button class="remove-item" data-remove="${id}" aria-label="Remove ${p.name}" type="button">×</button></div>`; }).join('');
   $('#showAtStallBtn').disabled = !state.picks.length;
   $('#showAtStallBtn').style.opacity = state.picks.length ? '1' : '.45';
+  $('#mobilePickCount').textContent=state.picks.length;
 }
 
 function openDrawer() { $('#caseDrawer').classList.add('open'); $('#caseDrawer').setAttribute('aria-hidden','false'); $('#scrim').hidden=false; document.body.style.overflow='hidden'; }
@@ -114,10 +110,10 @@ async function showStaff() {
     state.backendAvailable=false;renderOrders();toast('Backend not deployed yet — using this device only');
   }
   sessionStorage.setItem('sketchy-staff-pin',state.staffPin);
-  closeDrawer(); $('#storeView').hidden=true; $('footer').hidden=true; $('#staffView').hidden=false; $('.site-header').hidden=true; $('#caseNav').hidden=true; $('#clueHud').hidden=true; $('#trackingFab').hidden=true; window.scrollTo(0,0); updateClock();
+  closeDrawer(); $('#storeView').hidden=true; $('footer').hidden=true; $('#staffView').hidden=false; $('.site-header').hidden=true; $('#caseNav').hidden=true; $('#trackingFab').hidden=true; $('#mobileDock').hidden=true; window.scrollTo(0,0); updateClock();
   clearInterval(staffRefreshTimer);if(state.backendAvailable)staffRefreshTimer=setInterval(()=>loadOrders().catch(()=>{}),15000);
 }
-function showStore() { clearInterval(staffRefreshTimer);$('#storeView').hidden=false; $('footer').hidden=false; $('#staffView').hidden=true; $('.site-header').hidden=false; $('#caseNav').hidden=false; $('#clueHud').hidden=false; $('#trackingFab').hidden=false; window.scrollTo(0,0); }
+function showStore() { clearInterval(staffRefreshTimer);$('#storeView').hidden=false; $('footer').hidden=false; $('#staffView').hidden=true; $('.site-header').hidden=false; $('#caseNav').hidden=false; $('#trackingFab').hidden=false; $('#mobileDock').hidden=false; window.scrollTo(0,0); }
 function updateClock() { const el=$('#staffClock'); if(el) el.textContent=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); }
 
 function openTracking(code='') {
@@ -138,28 +134,7 @@ async function lookupOrder(code,silent=false) {
   } catch(error) { if(!silent)result.innerHTML=`<p><b>Case not found.</b><br>${escapeHtml(error.message)}</p>`; }
 }
 
-function renderClues() {
-  const count = state.clues.length;
-  $('#clueCount').textContent = count;
-  $('#clueHud').setAttribute('aria-label', `Secret case: ${count} of 3 clues found`);
-  $$('.hidden-clue').forEach(clue => {
-    const found = state.clues.includes(clue.dataset.clue);
-    clue.classList.toggle('found', found);
-    clue.textContent = found ? '✓' : clue.dataset.clue === 'paper-mark' ? '⌁' : '✦';
-    clue.setAttribute('aria-label', found ? 'Maker mark found' : 'Hidden maker mark');
-  });
-}
-
-function collectClue(id) {
-  if (state.clues.includes(id)) { toast('You already found this maker mark'); return; }
-  state.clues.push(id); save(); renderClues();
-  toast(`Clue found — ${state.clues.length}/3`);
-  if (state.clues.length === 3) setTimeout(showClueBadge, 350);
-}
-
-function showClueBadge() {
-  $('#clueOverlay').hidden = false;
-  document.body.style.overflow = 'hidden';
+function burstConfetti() {
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   const colors = ['#ee672d','#fff6a9','#b8bdaa','#ffd8be','#181816'];
   for (let i=0;i<26;i++) {
@@ -172,33 +147,10 @@ function showClueBadge() {
     piece.addEventListener('animationend',()=>piece.remove());
   }
 }
-function closeClueBadge() { $('#clueOverlay').hidden=true; document.body.style.overflow=''; }
-
-function updateCatalogMetrics() {
-  const catalog=$('.catalog'),stage=$('.catalog-stage'),track=$('#productGrid');
-  if (!catalog || !stage || !track) return;
-  if (window.innerWidth <= 950 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    catalogTravel=0; catalog.style.height=''; catalog.style.setProperty('--catalog-x','0px'); return;
-  }
-  catalogTravel=Math.max(0,track.scrollWidth-stage.clientWidth);
-  catalog.style.height=`${Math.round(window.innerHeight+catalogTravel+window.innerHeight*.22)}px`;
-}
 
 function setupPlayfulInteractions() {
   const finePointer = window.matchMedia('(pointer:fine)').matches;
   if (finePointer) {
-    $('#productGrid').addEventListener('pointermove', e => {
-      const card=e.target.closest('.product-card'); if(!card) return;
-      const rect=card.getBoundingClientRect(); const x=(e.clientX-rect.left)/rect.width-.5; const y=(e.clientY-rect.top)/rect.height-.5;
-      card.classList.add('is-tilting');
-      card.style.transform=`perspective(850px) rotateX(${y*-5.5}deg) rotateY(${x*7}deg) translateY(-5px)`;
-      card.style.setProperty('--glint-x',`${(x+.5)*100}%`); card.style.setProperty('--glint-y',`${(y+.5)*100}%`);
-    });
-    $('#productGrid').addEventListener('pointerout', e => {
-      const card=e.target.closest('.product-card'); if(!card || card.contains(e.relatedTarget)) return;
-      card.classList.remove('is-tilting'); card.style.transform='';
-    });
-
     $$('.maker-note').forEach(note => note.addEventListener('pointerdown', e => {
       e.preventDefault(); const parent=note.parentElement; const noteRect=note.getBoundingClientRect(); const parentRect=parent.getBoundingClientRect();
       const startX=e.clientX,startY=e.clientY,startLeft=noteRect.left-parentRect.left,startTop=noteRect.top-parentRect.top;
@@ -211,7 +163,7 @@ function setupPlayfulInteractions() {
 }
 
 function observeReveals(root=document) {
-  const targets = $$('.product-card, .section-heading, .filter-row, .portrait-stack, .feature-copy, .steps article, .final-cta > *', root);
+  const targets = $$('.project-copy, .project-index, .portrait-stack, .feature-copy, .steps article, .final-cta > *', root);
   targets.forEach((el,index) => {
     if (el.dataset.revealReady) return;
     el.dataset.revealReady = 'true';
@@ -221,6 +173,22 @@ function observeReveals(root=document) {
     el.style.setProperty('--reveal-delay', `${(index % 3) * 90}ms`);
     revealObserver.observe(el);
   });
+}
+
+function finishOpeningFilm() {
+  clearTimeout(filmTimer);
+  const film=$('#openingFilm');
+  if(!film || film.classList.contains('is-finished')) return;
+  film.classList.add('is-finished');document.body.classList.remove('film-playing');
+  setTimeout(()=>film.hidden=true,700);
+}
+function setupOpeningFilm() {
+  const film=$('#openingFilm');
+  if(!film)return;
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches || new URLSearchParams(location.search).has('track')) { finishOpeningFilm();return; }
+  film.classList.add('is-playing');
+  film.addEventListener('wheel',event=>event.preventDefault(),{passive:false});
+  filmTimer=setTimeout(finishOpeningFilm,8200);
 }
 
 function setupScrollExperience() {
@@ -242,7 +210,7 @@ function setupScrollExperience() {
   revealVisible();
   requestAnimationFrame(() => document.body.classList.add('page-loaded'));
 
-  if (reduceMotion) { document.body.classList.remove('intro-active'); return; }
+  if (reduceMotion) return;
   let ticking = false;
   const updateScroll = () => {
     const y = window.scrollY;
@@ -250,39 +218,10 @@ function setupScrollExperience() {
     $('#scrollProgress').style.transform = `scaleX(${Math.min(1,y/max)})`;
     $('.site-header').classList.toggle('scrolled', y > 24);
     revealVisible();
-    const sectionIds=['#top','#case-files','#how-it-works'];
+    const sectionIds=['#top','#project','#case-files','#how-it-works'];
     let activeId='#top';
     sectionIds.forEach(id => { if ($(id).getBoundingClientRect().top < window.innerHeight*.42) activeId=id; });
     $$('#caseNav [data-jump]').forEach(button => button.classList.toggle('active',button.dataset.jump===activeId));
-
-    const intro=$('.intro-sequence');
-    const introRect=intro.getBoundingClientRect();
-    const introDistance=Math.max(1,intro.offsetHeight-window.innerHeight);
-    const introProgress=Math.max(0,Math.min(1,-introRect.top/introDistance));
-    const introEnter=1-Math.pow(1-Math.min(1,introProgress/.38),3);
-    const introGather=Math.max(0,Math.min(1,(introProgress-.24)/.38));
-    const introReveal=Math.max(0,Math.min(1,(introProgress-.58)/.28));
-    const introFade=Math.max(0,Math.min(1,(introProgress-.9)/.1));
-    document.body.classList.toggle('intro-active',introProgress<.91);
-    intro.style.setProperty('--intro-grid-y',`${18-introProgress*35}%`);
-    intro.style.setProperty('--intro-title-one-x',`${-105*(1-introEnter)-introGather*35}vw`);
-    intro.style.setProperty('--intro-title-two-x',`${105*(1-introEnter)+introGather*35}vw`);
-    intro.style.setProperty('--intro-title-opacity',`${1-introGather}`);
-    intro.style.setProperty('--orb-paper-x',`${-4*(1-introEnter)+introGather*38}vw`);
-    intro.style.setProperty('--orb-paper-y',`${Math.sin(introProgress*8)*12-introGather*8}vh`);
-    intro.style.setProperty('--orb-paper-r',`${-18+introProgress*65}deg`);
-    intro.style.setProperty('--orb-yarn-y',`${-8*(1-introEnter)+introGather*24}vh`);
-    intro.style.setProperty('--orb-yarn-r',`${13-introProgress*55}deg`);
-    intro.style.setProperty('--orb-ink-x',`${4*(1-introEnter)-introGather*38}vw`);
-    intro.style.setProperty('--orb-ink-y',`${Math.cos(introProgress*8)*10-introGather*4}vh`);
-    intro.style.setProperty('--orb-ink-r',`${19-introProgress*70}deg`);
-    intro.style.setProperty('--intro-material-opacity',`${1-Math.min(1,Math.max(0,(introProgress-.58)/.17))}`);
-    intro.style.setProperty('--intro-portal-scale',`${.05+introReveal*13}`);
-    intro.style.setProperty('--intro-portal-opacity',`${introReveal}`);
-    intro.style.setProperty('--intro-reveal-opacity',`${introReveal*(1-introFade)}`);
-    intro.style.setProperty('--intro-reveal-scale',`${.7+introReveal*.3+introFade*.15}`);
-    intro.style.setProperty('--intro-reveal-rotate',`${-3+introReveal*3}deg`);
-    intro.style.setProperty('--intro-scroll-opacity',`${Math.max(.12,.7-introProgress*.8)}`);
 
     const hero = $('.hero');
     const heroProgress = Math.min(1, Math.max(0, y / Math.max(1,hero.offsetHeight)));
@@ -319,36 +258,7 @@ function setupScrollExperience() {
     });
     $$('.story-dot').forEach((dot,i)=>dot.classList.toggle('is-current',i===storyIndex));
     $('#storyCounter').textContent=`${String(storyIndex+1).padStart(2,'0')} / ${String(products.length).padStart(2,'0')}`;
-
-    const catalog = $('.catalog');
-    const catalogRect = catalog.getBoundingClientRect();
-    const catalogDistance=Math.max(1,catalog.offsetHeight-window.innerHeight);
-    const catalogProgress=Math.max(0,Math.min(1,(68-catalogRect.top)/catalogDistance));
-    const catalogExit=Math.max(0,Math.min(1,(catalogProgress-.94)/.06));
-    $('.catalog-stage').style.opacity=`${1-catalogExit}`;
-    $('.catalog-stage').style.clipPath=`inset(0 0 ${catalogExit*100}% 0)`;
-    $('.catalog-stage').style.pointerEvents=catalogExit>.9?'none':'';
-    catalog.style.setProperty('--catalog-x',`${catalogProgress*catalogTravel*-1}px`);
-    catalog.style.setProperty('--catalog-shift', `${-4+catalogProgress*-34}vw`);
-
-    const transition=$('.case-transition');
-    const transitionRect=transition.getBoundingClientRect();
-    $('.site-header').classList.toggle('dark-scene',storyActive||(catalogProgress>.985&&transitionRect.bottom>68));
-    const transitionDistance=Math.max(1,transition.offsetHeight-window.innerHeight);
-    const transitionProgress=Math.max(0,Math.min(1,-transitionRect.top/transitionDistance));
-    const enter=1-Math.pow(1-Math.min(1,transitionProgress/.42),3);
-    const exit=Math.max(0,Math.min(1,(transitionProgress-.62)/.24));
-    const iris=Math.max(0,Math.min(1,(transitionProgress-.46)/.42));
-    const verdict=Math.max(0,Math.min(1,(transitionProgress-.66)/.25));
-    transition.style.setProperty('--paper-x',`${-110*(1-enter)-exit*70}vw`);
-    transition.style.setProperty('--yarn-x',`${110*(1-enter)+exit*70}vw`);
-    transition.style.setProperty('--ink-y',`${70*(1-enter)-exit*65}vh`);
-    transition.style.setProperty('--ink-rotate',`${-12+enter*12-exit*8}deg`);
-    transition.style.setProperty('--materials-opacity',`${1-exit}`);
-    transition.style.setProperty('--iris-scale',`${.12+iris*15}`);
-    transition.style.setProperty('--verdict-opacity',`${verdict}`);
-    transition.style.setProperty('--verdict-scale',`${.75+verdict*.25}`);
-    transition.style.setProperty('--verdict-rotate',`${-3+verdict*3}deg`);
+    $('.site-header').classList.toggle('dark-scene',storyActive);
 
     const feature = $('.caricature-feature');
     const featureRect = feature.getBoundingClientRect();
@@ -363,25 +273,22 @@ function setupScrollExperience() {
     ticking = false;
   };
   window.addEventListener('scroll', () => { if (!ticking) { ticking=true; requestAnimationFrame(updateScroll); } }, { passive:true });
-  window.addEventListener('resize',()=>{ updateCatalogMetrics(); updateScroll(); });
+  window.addEventListener('resize',updateScroll);
   window.addEventListener('load',()=>{
     if (location.hash) setTimeout(()=>{ try { $(location.hash)?.scrollIntoView(); } catch (_) {} updateScroll(); },120);
     requestAnimationFrame(updateScroll);
   },{once:true});
   window.addEventListener('hashchange',()=>requestAnimationFrame(updateScroll));
-  updateCatalogMetrics();
   updateScroll();
   setTimeout(updateScroll,250);
 }
 
 document.addEventListener('click', async e => {
   const storyJump=e.target.closest('[data-story-jump]'); if(storyJump){ const story=$('.product-story'),distance=story.offsetHeight-window.innerHeight,progress=Number(storyJump.dataset.storyJump)/(products.length-1); window.scrollTo({top:story.offsetTop+distance*progress,behavior:'smooth'}); }
-  const orb=e.target.closest('[data-orb]'); if(orb){ $$('.material-orb').forEach(item=>item.classList.toggle('is-lit',item===orb)); toast(`${orb.dataset.orb} selected — keep scrolling to open the case`); }
-  const clue=e.target.closest('[data-clue]'); if(clue) collectClue(clue.dataset.clue);
+  const surprise=e.target.closest('[data-product-surprise]'); if(surprise){ const product=productById(surprise.dataset.productSurprise);surprise.classList.remove('is-booping');void surprise.offsetWidth;surprise.classList.add('is-booping');toast(`${product.icon} ${['Highly suspicious craftsmanship.','Evidence: definitely handmade.','Tiny object. Huge personality.'][Math.floor(Math.random()*3)]}`); }
   const jump=e.target.closest('[data-jump]'); if(jump) $(jump.dataset.jump)?.scrollIntoView({behavior:'smooth'});
   const add=e.target.closest('[data-product]'); if(add) togglePick(add.dataset.product);
   const remove=e.target.closest('[data-remove]'); if(remove) togglePick(remove.dataset.remove);
-  const filter=e.target.closest('[data-filter]'); if(filter){ $$('.filter').forEach(b=>b.classList.toggle('active',b===filter)); renderProducts(filter.dataset.filter); }
   const orderFilter=e.target.closest('[data-status]'); if(orderFilter){ state.orderFilter=orderFilter.dataset.status; $$('.order-filters button').forEach(b=>b.classList.toggle('active',b===orderFilter)); renderOrders(); }
   const copy=e.target.closest('[data-copy-code]'); if(copy){ await navigator.clipboard?.writeText(copy.dataset.copyCode); toast('Tracking code copied'); }
   const del=e.target.closest('[data-delete-order]'); if(del && confirm('Delete this order?')) { try { if(state.backendAvailable)await api(`/orders/${del.dataset.deleteOrder}`,{method:'DELETE',staff:true}); state.orders=state.orders.filter(o=>o.id!==del.dataset.deleteOrder);save();renderOrders(); } catch(error){ toast(error.message); } }
@@ -405,17 +312,19 @@ $('#orderForm').addEventListener('submit', async e => {
   } catch(error) { toast(error.message); } finally { submit.disabled=false; }
 });
 $('#caseButton').addEventListener('click',openDrawer); $('#bottomPicksBtn').addEventListener('click',openDrawer); $('#closeDrawer').addEventListener('click',closeDrawer); $('#scrim').addEventListener('click',closeDrawer);
+$('#mobilePicksBtn').addEventListener('click',openDrawer); $('#mobileTrackBtn').addEventListener('click',()=>openTracking());
 $('#staffNavBtn').addEventListener('click',showStaff); $('#backStoreBtn').addEventListener('click',showStore);
 $('#trackNavBtn').addEventListener('click',()=>openTracking()); $('#trackingFab').addEventListener('click',()=>openTracking()); $('#closeTracking').addEventListener('click',closeTracking); $('#trackingOverlay').addEventListener('click',e=>{if(e.target===$('#trackingOverlay'))closeTracking();});
 $('#trackingForm').addEventListener('submit',e=>{e.preventDefault();lookupOrder(new FormData(e.currentTarget).get('trackingCode'));});
 $('#showAtStallBtn').addEventListener('click',()=>{ toast('Show this screen to us at the stall!'); });
-$('#clueHud').addEventListener('click',()=> state.clues.length===3 ? showClueBadge() : toast(`${3-state.clues.length} secret maker mark${3-state.clues.length===1?'':'s'} still hiding…`));
-$('#closeClueBadge').addEventListener('click',closeClueBadge); $('#clueOverlay').addEventListener('click',e=>{ if(e.target===$('#clueOverlay')) closeClueBadge(); });
-$('#huntAgainBtn').addEventListener('click',()=>{ state.clues=[];save();renderClues();closeClueBadge();toast('The secret case is open again'); });
+$('#skipFilm').addEventListener('click',finishOpeningFilm);
+$('#projectStamp').addEventListener('click',()=>{ const messages=['Summer project classified.','Built with paper, yarn, ink, and snacks.','Two young makers. Zero boring products.','Secret unlocked: creativity is the whole operation.'];toast(messages[projectTaps%messages.length]);projectTaps+=1;if(projectTaps%4===0)burstConfetti(); });
+$('.brand').addEventListener('click',()=>{logoTaps+=1;if(logoTaps===3){toast('Logo tapped 3× — extremely sketchy behavior.');burstConfetti();logoTaps=0;} });
 $('#clearDoneBtn').addEventListener('click',async()=>{ const count=state.orders.filter(o=>o.status==='picked-up').length; if(count && confirm(`Clear ${count} picked-up order${count===1?'':'s'}?`)){ try { if(state.backendAvailable)await api('/orders/picked-up',{method:'DELETE',staff:true});state.orders=state.orders.filter(o=>o.status!=='picked-up');save();renderOrders(); } catch(error){toast(error.message);} } });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeDrawer(); closeClueBadge(); closeTracking(); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeDrawer(); closeTracking();finishOpeningFilm(); } });
 setInterval(updateClock,30000);
-renderProducts(); renderProductStory(); renderDrawer(); renderStaffProducts(); renderOrders(); renderClues(); updateClock();
+renderProductStory(); renderDrawer(); syncPickButtons(); renderStaffProducts(); renderOrders(); updateClock();
+setupOpeningFilm();
 setupScrollExperience();
 setupPlayfulInteractions();
 const trackingFromUrl=new URLSearchParams(location.search).get('track'); if(trackingFromUrl) openTracking(trackingFromUrl);
