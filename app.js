@@ -1,8 +1,8 @@
 const products = [
   { id:'caricature', name:'Personalized Caricature', category:'art', mark:'YOU?', blurb:'A personalized black-and-white caricature drawn from a photo we take at the stall—and delete after drawing.', price:'$12 one person · $17 two people' },
-  { id:'eagle', name:'Origami Eagle', category:'origami', image:'assets/products/origami-eagle.png', mark:'EAGLE', blurb:'An intricate, feathery eagle and one of our hardest folds to master.', price:'$8' },
-  { id:'dragon', name:'Origami Dragon v3', category:'origami', image:'assets/products/origami-dragon-v3.png', mark:'DRAGON', blurb:'An upgraded fair-exclusive dragon with a better neck and folded wings.', price:'$5' },
-  { id:'mouse', name:'Origami Mouse', category:'origami', image:'assets/products/origami-mouse.png', mark:'MOUSE', blurb:'A tiny, adorable mouse with very cool ears and a tail we really love.', price:'$6' },
+  { id:'eagle', name:'Origami Eagle', category:'origami', image:'assets/products/origami-eagle-display.png', mark:'EAGLE', blurb:'An intricate, feathery eagle and one of our hardest folds to master.', price:'$8' },
+  { id:'dragon', name:'Origami Dragon v3', category:'origami', image:'assets/products/origami-dragon-v3-display.png', mark:'DRAGON', blurb:'An upgraded fair-exclusive dragon with a better neck and folded wings.', price:'$5' },
+  { id:'mouse', name:'Origami Mouse', category:'origami', image:'assets/products/origami-mouse-display.png', mark:'MOUSE', blurb:'A tiny, adorable mouse with very cool ears and a tail we really love.', price:'$6' },
   { id:'kangaroo', name:'Origami Kangaroo', category:'origami', mark:'KNG', blurb:'No comment. Just KANGAROOOOO—in carefully folded paper.', price:'$5' },
   { id:'turtle', name:'Origami Turtle', category:'origami', mark:'TRL', blurb:'A turtle with a dimensional shell and a satisfyingly flat top.', price:'$5' },
   { id:'crochet-bookmark', name:'Crochet Bookmark', category:'crochet', mark:'YARN', blurb:'A soft crochet bookmark available in multiple handmade designs.', price:'$5' },
