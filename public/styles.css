@@ -4,6 +4,7 @@ html { scroll-behavior:smooth; }
 body { margin:0; color:var(--ink); background:var(--paper); font-family:"DM Sans",sans-serif; overflow-x:hidden; }
 button,input,textarea { font:inherit; }
 button,a { -webkit-tap-highlight-color:transparent; }
+button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible { outline:3px solid var(--orange);outline-offset:3px; }
 .opening-film { position:fixed; z-index:200; inset:0; overflow:hidden; display:grid; place-items:center; background:var(--ink); color:var(--paper); isolation:isolate; touch-action:none; transition:opacity .7s ease,visibility .7s; }.opening-film[hidden] { display:none; }.opening-film.is-finished { opacity:0;visibility:hidden;pointer-events:none; }.film-grid { position:absolute;inset:-15%;z-index:-3;opacity:.13;background-image:linear-gradient(rgba(244,240,231,.23) 1px,transparent 1px),linear-gradient(90deg,rgba(244,240,231,.23) 1px,transparent 1px);background-size:55px 55px;animation:film-grid-move 8.2s linear both; }.opening-film::before { content:"";position:absolute;z-index:-2;width:18vmax;height:18vmax;border-radius:50%;background:var(--orange);transform:scale(.05);animation:film-portal 8.2s cubic-bezier(.7,0,.2,1) both; }.film-kicker { position:absolute;top:7vh;margin:0;text-transform:uppercase;letter-spacing:.22em;font-size:10px;font-weight:900;animation:film-kicker 8.2s both; }.film-word { position:absolute;font-size:clamp(110px,19vw,290px);line-height:.75;letter-spacing:-.09em;font-weight:900;will-change:transform,opacity; }.film-paper { top:15vh;color:var(--paper);animation:film-paper 8.2s cubic-bezier(.2,.8,.2,1) both; }.film-yarn { top:40vh;color:var(--orange);-webkit-text-stroke:2px var(--paper);animation:film-yarn 8.2s cubic-bezier(.2,.8,.2,1) both; }.film-ink { top:65vh;color:var(--paper);animation:film-ink 8.2s cubic-bezier(.2,.8,.2,1) both; }.film-sketchy { position:absolute;inset:0;display:grid;place-content:center;text-align:center;font-size:clamp(75px,15vw,230px);font-weight:900;line-height:.72;letter-spacing:-.09em;opacity:0;animation:film-sketchy 8.2s both; }.film-sketchy span { color:transparent;-webkit-text-stroke:1px var(--paper);transform:rotate(-2deg); }.film-sketchy b { color:var(--paper);transform:rotate(2deg); }.film-reveal { width:min(860px,90vw);text-align:center;color:var(--ink);opacity:0;transform:scale(.72);animation:film-reveal 8.2s cubic-bezier(.2,.8,.2,1) both; }.film-reveal img { width:clamp(90px,11vw,145px);height:clamp(90px,11vw,145px);border-radius:50%;object-fit:cover;mix-blend-mode:multiply; }.film-reveal p { margin:3px 0 12px;text-transform:uppercase;letter-spacing:.2em;font-size:10px;font-weight:900; }.film-reveal h1 { margin:0;font-size:clamp(50px,7vw,105px);line-height:.9;letter-spacing:-.07em; }.film-reveal h1 em { color:var(--paper);font-size:.55em; }.film-progress { position:absolute;left:5vw;right:5vw;bottom:4vh;height:2px;background:rgba(244,240,231,.2);overflow:hidden; }.film-progress span { display:block;width:100%;height:100%;background:var(--orange);transform-origin:left;animation:film-progress 8.2s linear both; }.film-skip { position:absolute;right:5vw;top:5vh;border:1px solid rgba(244,240,231,.5);background:rgba(24,24,22,.45);color:white;padding:10px 13px;cursor:pointer;text-transform:uppercase;letter-spacing:.12em;font-size:9px;font-weight:900; }.film-skip:hover { background:var(--orange); }
 @keyframes film-grid-move { to { transform:translate3d(-70px,-45px,0) rotate(.5deg); } } @keyframes film-progress { from { transform:scaleX(0); } to { transform:scaleX(1); } } @keyframes film-kicker { 0%,7%{opacity:0;transform:translateY(-12px)} 12%,45%{opacity:1;transform:none} 52%,100%{opacity:0} } @keyframes film-paper { 0%,6%{opacity:0;transform:translateX(-110vw) rotate(-5deg)} 15%,28%{opacity:1;transform:translateX(0) rotate(-2deg)} 38%,100%{opacity:0;transform:translateX(-100vw) rotate(-5deg)} } @keyframes film-yarn { 0%,13%{opacity:0;transform:translateX(110vw) rotate(5deg)} 22%,35%{opacity:1;transform:translateX(0) rotate(2deg)} 44%,100%{opacity:0;transform:translateX(100vw) rotate(5deg)} } @keyframes film-ink { 0%,21%{opacity:0;transform:translateY(80vh) rotate(-9deg)} 30%,42%{opacity:1;transform:translateY(0) rotate(0)} 50%,100%{opacity:0;transform:translateY(-80vh) rotate(7deg)} } @keyframes film-sketchy { 0%,43%{opacity:0;transform:scale(.7) rotate(-4deg)} 51%,62%{opacity:1;transform:scale(1) rotate(0)} 68%,100%{opacity:0;transform:scale(1.25) rotate(3deg)} } @keyframes film-portal { 0%,58%{opacity:0;transform:scale(.05)} 65%{opacity:1} 82%,100%{opacity:1;transform:scale(15)} } @keyframes film-reveal { 0%,69%{opacity:0;transform:scale(.72) rotate(-3deg)} 80%,96%{opacity:1;transform:scale(1) rotate(0)} 100%{opacity:0;transform:scale(1.05)} }
 .noise { position:fixed; inset:0; z-index:20; pointer-events:none; opacity:.13; background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E"); mix-blend-mode:multiply; }
@@ -397,3 +398,24 @@ body.admin-mode .story-add { display:none!important; }
 
 /* The dedicated detective mark no longer needs the old full-logo crop. */
 .brand-mark img { inset:0!important;width:100%!important;height:100%!important;object-fit:contain;padding:2px; }
+
+/* Final layout and interaction cleanup */
+#project,#case-files,#how-it-works { scroll-margin-top:82px; }
+.drawer,.tracking-card,.account-card,.customer-order-card,.mobile-menu-panel { overscroll-behavior:contain; }
+.icon-button,.mobile-menu-toggle,.story-dot,.remove-item,.delete-order { min-width:44px;min-height:44px; }
+.hero-copy { min-width:0; }
+.hero-lede { overflow-wrap:anywhere; }
+
+@media (max-width:950px) {
+  #project,#case-files,#how-it-works { scroll-margin-top:68px; }
+  .hero-copy { width:100%;max-width:100%; }
+  .hero-copy>*:not(.maker-note) { max-width:100%; }
+  .hero-actions { width:100%; }
+  .mobile-menu-panel { overflow-y:auto;-webkit-overflow-scrolling:touch; }
+}
+
+@media (max-width:420px) {
+  #project,#case-files,#how-it-works { scroll-margin-top:60px; }
+  .hero-copy { padding-left:18px;padding-right:18px; }
+  .hero-actions .button-49,.hero-actions .button-55 { max-width:100%; }
+}

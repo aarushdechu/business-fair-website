@@ -106,6 +106,7 @@ function toast(message) { const el=$('#toast'); el.textContent=message; el.class
 function openMobileMenu() {
   clearTimeout(mobileMenuTimer);
   $('#mobileMenu').hidden=false;
+  $('#mobileMenu').setAttribute('aria-hidden','false');
   $('#mobileMenuToggle').setAttribute('aria-expanded','true');
   $('#mobileMenuToggle').setAttribute('aria-label','Close menu');
   document.body.classList.add('mobile-menu-open');
@@ -115,6 +116,7 @@ function closeMobileMenu(immediate=false) {
   clearTimeout(mobileMenuTimer);
   const menu=$('#mobileMenu');
   menu.classList.remove('is-open');
+  menu.setAttribute('aria-hidden','true');
   $('#mobileMenuToggle').setAttribute('aria-expanded','false');
   $('#mobileMenuToggle').setAttribute('aria-label','Open menu');
   document.body.classList.remove('mobile-menu-open');
@@ -291,17 +293,21 @@ function observeReveals(root=document) {
   });
 }
 
-function finishOpeningFilm() {
+function finishOpeningFilm(immediate=false) {
   clearTimeout(filmTimer);
   const film=$('#openingFilm');
   if(!film || film.classList.contains('is-finished')) return;
+  sessionStorage.setItem('sketchy-intro-seen','true');
   film.classList.add('is-finished');document.body.classList.remove('film-playing');
-  setTimeout(()=>film.hidden=true,700);
+  if(immediate)film.hidden=true;
+  else setTimeout(()=>film.hidden=true,700);
 }
 function setupOpeningFilm() {
   const film=$('#openingFilm');
   if(!film)return;
-  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches || new URLSearchParams(location.search).has('track')) { finishOpeningFilm();return; }
+  const returningVisit=sessionStorage.getItem('sketchy-intro-seen')==='true';
+  const directDestination=Boolean(location.hash)||new URLSearchParams(location.search).has('track');
+  if(window.matchMedia('(prefers-reduced-motion: reduce)').matches||returningVisit||directDestination){finishOpeningFilm(true);return;}
   film.classList.add('is-playing');
   film.addEventListener('wheel',event=>event.preventDefault(),{passive:false});
   filmTimer=setTimeout(finishOpeningFilm,8200);
@@ -400,6 +406,8 @@ function setupScrollExperience() {
   setTimeout(updateScroll,250);
 }
 
+window.addEventListener('resize',()=>{if(window.innerWidth>950&&!$('#mobileMenu').hidden)closeMobileMenu(true);});
+
 document.addEventListener('click', async e => {
   if(e.target.closest('#mobileMenu [data-jump]'))closeMobileMenu();
   const storyJump=e.target.closest('[data-story-jump]'); if(storyJump){ const story=$('.product-story'),distance=story.offsetHeight-window.innerHeight,progress=Number(storyJump.dataset.storyJump)/(products.length-1); window.scrollTo({top:story.offsetTop+distance*progress,behavior:'smooth'}); }
@@ -456,7 +464,7 @@ $('#trackNavBtn').addEventListener('click',()=>openTracking()); $('#trackingFab'
 $('#trackingForm').addEventListener('submit',e=>{e.preventDefault();lookupOrder(new FormData(e.currentTarget).get('orderNumber'));});
 $('#showAtStallBtn').addEventListener('click',openCustomerOrder);$('#closeCustomerOrder').addEventListener('click',closeCustomerOrder);$('#customerOrderOverlay').addEventListener('click',e=>{if(e.target===$('#customerOrderOverlay'))closeCustomerOrder();});
 $('#customerTrackBtn').addEventListener('click',()=>{closeCustomerOrder();openTracking(lastCustomerOrderNumber);});
-$('#skipFilm').addEventListener('click',finishOpeningFilm);
+$('#skipFilm').addEventListener('click',()=>finishOpeningFilm());
 $('#projectStamp').addEventListener('click',()=>{ const messages=['Summer project classified.','Built with paper, yarn, ink, and snacks.','Two young makers. Zero boring products.','Secret unlocked: creativity is the whole operation.'];toast(messages[projectTaps%messages.length]);projectTaps+=1;if(projectTaps%4===0)burstConfetti(); });
 $('.brand').addEventListener('click',()=>{logoTaps+=1;if(logoTaps===3){toast('Logo tapped 3× — extremely sketchy behavior.');burstConfetti();logoTaps=0;} });
 $('#clearDoneBtn').addEventListener('click',async()=>{ const count=state.orders.filter(o=>o.status==='picked-up').length; if(count && confirm(`Clear ${count} picked-up order${count===1?'':'s'}?`)){ try { if(state.backendAvailable)await api('/orders/picked-up',{method:'DELETE',staff:true});state.orders=state.orders.filter(o=>o.status!=='picked-up');save();renderOrders(); } catch(error){toast(error.message);} } });
