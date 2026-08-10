@@ -2,6 +2,29 @@
 
 A storefront, shared stall order board, private customer tracking page, and optional email notifications for a children's business fair.
 
+## Project structure
+
+```text
+business-fair-website/
+├── public/              Website files sent to visitors
+│   ├── assets/          Logo and product pictures
+│   ├── index.html       Page structure
+│   ├── styles.css       Website design
+│   └── app.js           Browser interactions
+├── server/              Private backend code
+│   ├── app.js           Express setup and static files
+│   ├── auth.js          Google sign-in and admin access
+│   ├── config.js        Environment settings
+│   ├── database.js      PostgreSQL connection and setup
+│   ├── email.js         Caricature-ready emails
+│   ├── orders.js        Order and tracking API routes
+│   └── utils.js         Shared helper functions
+├── server.js            Starts the backend
+├── .env.example         Safe template for local settings
+├── package.json         Node dependencies and commands
+└── render.yaml          Render deployment settings
+```
+
 ## Run locally
 
 Install Node.js 20+, create a PostgreSQL database, copy `.env.example` to `.env`, and set the values. Then run:
@@ -12,6 +35,8 @@ npm start
 ```
 
 Visit `http://localhost:3000`.
+
+Run `npm run check` after changing JavaScript to check all server and browser files for syntax errors.
 
 ## Deploy on Render
 
