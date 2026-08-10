@@ -110,7 +110,8 @@ app.get('/api/config',(_req,res)=>res.json({ googleClientId:googleClientId&&sess
 app.get('/api/auth/me',(req,res)=>{ const user=readSession(req);if(!user)return res.status(401).json({error:'Not signed in.'});res.json({user}); });
 app.post('/api/auth/google',limitAuth,async(req,res)=>{
   const origin=req.get('origin'),expected=`${req.protocol}://${req.get('host')}`;
-  if(origin&&origin!==expected)return res.status(403).json({error:'This sign-in request came from an unexpected site.'});
+  const publicOrigin=cleanEnv(process.env.PUBLIC_URL).replace(/\/$/,'');
+  if(origin&&origin!==expected&&origin!==publicOrigin)return res.status(403).json({error:'This sign-in request came from an unexpected site.'});
   try { const user=await verifyGoogleCredential(clean(req.body.credential,5000));res.setHeader('Set-Cookie',sessionCookie(createSession(user)));res.json({user}); }
   catch(error) { res.status(401).json({error:error.message}); }
 });
