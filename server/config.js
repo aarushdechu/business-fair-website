@@ -11,6 +11,13 @@ export const staffPin = cleanEnv(process.env.STAFF_PIN);
 export const publicUrl = cleanEnv(process.env.RENDER_EXTERNAL_URL || process.env.PUBLIC_URL).replace(/\/$/, '');
 export const resendApiKey = cleanEnv(process.env.RESEND_API_KEY);
 export const emailFrom = cleanEnv(process.env.EMAIL_FROM);
+export const gmailUser = cleanEnv(process.env.GMAIL_USER).toLowerCase();
+export const gmailAppPassword = cleanEnv(process.env.GMAIL_APP_PASSWORD).replace(/\s/g, '');
+export const emailProvider = gmailUser && gmailAppPassword
+  ? 'gmail'
+  : resendApiKey && emailFrom
+    ? 'resend'
+    : '';
 
 export const adminEmails = new Set([
   'dechu.avengers@gmail.com',

@@ -1,5 +1,5 @@
 import crypto from 'node:crypto';
-import { orderStatuses, productIds } from './config.js';
+import { emailProvider, orderStatuses, productIds } from './config.js';
 import { requireStaff, requireUser } from './auth.js';
 import { pool, requireDatabase } from './database.js';
 import { sendReadyEmail } from './email.js';
@@ -55,7 +55,8 @@ export function registerOrderRoutes(app, limits) {
       res.json({
         ok:true,
         database:true,
-        email:Boolean(process.env.RESEND_API_KEY && process.env.EMAIL_FROM)
+        email:Boolean(emailProvider),
+        emailProvider:emailProvider || null
       });
     } catch {
       res.status(503).json({ ok:false, database:false });

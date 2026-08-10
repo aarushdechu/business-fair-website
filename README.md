@@ -43,8 +43,9 @@ Run `npm run check` after changing JavaScript to check all server and browser fi
 The included `render.yaml` creates a Node web service and PostgreSQL database. Create a new Render Blueprint from this repository, then provide:
 
 - `STAFF_PIN`: the private PIN used to open the staff board.
-- `RESEND_API_KEY`: optional; enables status emails.
-- `EMAIL_FROM`: optional; for example `A Sketchy Business <orders@your-verified-domain.com>`.
+- `GMAIL_USER`: Gmail address used for ready notifications.
+- `GMAIL_APP_PASSWORD`: Google's 16-character App Password for that Gmail account.
+- `RESEND_API_KEY` and `EMAIL_FROM`: optional alternative if you later use Resend with a verified domain.
 - `GOOGLE_CLIENT_ID`: optional; enables Google sign-in for customers.
 - `SESSION_SECRET`: a long random secret used to sign login cookies. The Render Blueprint generates this automatically.
 
@@ -64,4 +65,11 @@ The web app includes a manifest and service worker, so it can be installed from 
 
 ## Email setup
 
-Create a Resend account, verify a sending domain, and add the API key and sender to Render's environment variables. Without those two values, order tracking still works, but emails are skipped.
+For the simplest setup without a custom domain:
+
+1. Turn on 2-Step Verification for the Gmail sender account.
+2. Create a Google App Password named `A Sketchy Business`.
+3. Add `GMAIL_USER` and `GMAIL_APP_PASSWORD` to the Render web service's environment variables, then redeploy.
+4. Check `/api/health`; it should report `"email":true` and `"emailProvider":"gmail"`.
+
+The App Password is a secret: place it only in Render, never in this repository. Gmail is suitable for this small fair workflow but not bulk email. If both Gmail and Resend are configured, Gmail is used. Ready notifications are sent only for orders containing a personalized caricature when an admin changes the order status to `ready`.
