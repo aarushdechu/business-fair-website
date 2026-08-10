@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 import { emailProvider, orderStatuses, productIds } from './config.js';
 import { requireStaff, requireUser } from './auth.js';
 import { pool, requireDatabase } from './database.js';
-import { sendReadyEmail } from './email.js';
+import { describeEmailError, getEmailDiagnostics, sendReadyEmail } from './email.js';
 import { clean } from './utils.js';
 
 function rowToOrder(row) {
@@ -52,11 +52,14 @@ export function registerOrderRoutes(app, limits) {
     if (!pool) return res.status(503).json({ ok:false, database:false });
     try {
       await pool.query('SELECT 1');
+      const emailStatus=await getEmailDiagnostics();
       res.json({
         ok:true,
         database:true,
         email:Boolean(emailProvider),
-        emailProvider:emailProvider || null
+        emailProvider:emailProvider || null,
+        emailReady:emailStatus.ready,
+        emailProblem:emailStatus.problem
       });
     } catch {
       res.status(503).json({ ok:false, database:false });
@@ -133,12 +136,14 @@ export function registerOrderRoutes(app, limits) {
 
       const order = result.rows[0];
       let emailSent = false;
+      let emailError = '';
       try {
         emailSent = (await sendReadyEmail(order, `${req.protocol}://${req.get('host')}`)).sent;
-      } catch (emailError) {
-        console.error('Email failed:', emailError.message);
+      } catch (sendError) {
+        console.error('Email failed:', sendError.message);
+        emailError = describeEmailError(sendError);
       }
-      res.json({ ...rowToOrder(order), emailSent });
+      res.json({ ...rowToOrder(order), emailSent, emailError });
     } catch (error) {
       next(error);
     }

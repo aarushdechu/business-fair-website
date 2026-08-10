@@ -429,7 +429,7 @@ document.addEventListener('change', async e => {
   if(e.target.matches('[data-order-status]')) {
     const order=state.orders.find(o=>o.id===e.target.dataset.orderStatus); if(!order)return;
     const previous=order.status;e.target.disabled=true;
-    try { const updated=state.backendAvailable?await api(`/orders/${order.id}`,{method:'PATCH',staff:true,body:JSON.stringify({status:e.target.value})}):{...order,status:e.target.value,emailSent:false}; Object.assign(order,updated);save();renderOrders();toast(`Order #${order.number} updated${updated.emailSent?' and emailed':''}`); }
+    try { const updated=state.backendAvailable?await api(`/orders/${order.id}`,{method:'PATCH',staff:true,body:JSON.stringify({status:e.target.value})}):{...order,status:e.target.value,emailSent:false}; Object.assign(order,updated);save();renderOrders();toast(updated.emailSent?`Order #${order.number} updated and emailed`:(updated.emailError?`Order updated — ${updated.emailError}`:`Order #${order.number} updated`)); }
     catch(error){ order.status=previous;renderOrders();toast(error.message); }
   }
 });

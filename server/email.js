@@ -10,6 +10,37 @@ import {
 import { escapeHtml } from './utils.js';
 
 let gmailTransporter;
+let gmailVerification;
+
+function getGmailTransporter() {
+  gmailTransporter ||= nodemailer.createTransport({
+    host:'smtp.gmail.com',
+    port:465,
+    secure:true,
+    family:4,
+    auth:{ user:gmailUser, pass:gmailAppPassword },
+    connectionTimeout:10_000,
+    greetingTimeout:10_000,
+    socketTimeout:15_000
+  });
+  return gmailTransporter;
+}
+
+export function describeEmailError(error) {
+  if(error?.code==='EAUTH' || error?.responseCode===535) return 'Gmail rejected the address or App Password.';
+  if(['ECONNECTION','ETIMEDOUT','ESOCKET','EDNS'].includes(error?.code)) return 'The server could not connect to Gmail.';
+  if(error?.responseCode===550) return 'Gmail rejected the recipient address.';
+  return 'Gmail could not send the message.';
+}
+
+export async function getEmailDiagnostics() {
+  if(!emailProvider)return { configured:false,ready:false,provider:null,problem:'Email credentials are missing.' };
+  if(emailProvider==='resend')return { configured:true,ready:true,provider:'resend',problem:null };
+  gmailVerification ||= getGmailTransporter().verify()
+    .then(()=>({ configured:true,ready:true,provider:'gmail',problem:null }))
+    .catch(error=>({ configured:true,ready:false,provider:'gmail',problem:describeEmailError(error) }));
+  return gmailVerification;
+}
 
 function readyMessage(order, requestOrigin) {
   const trackingUrl = `${publicUrl || requestOrigin}/?track=${encodeURIComponent(order.number)}`;
@@ -20,14 +51,7 @@ function readyMessage(order, requestOrigin) {
 }
 
 async function sendWithGmail(order, message) {
-  gmailTransporter ||= nodemailer.createTransport({
-    service:'gmail',
-    auth:{ user:gmailUser, pass:gmailAppPassword },
-    connectionTimeout:10_000,
-    greetingTimeout:10_000,
-    socketTimeout:15_000
-  });
-  await gmailTransporter.sendMail({
+  await getGmailTransporter().sendMail({
     from:`A Sketchy Business <${gmailUser}>`,
     to:order.customer_email,
     ...message
