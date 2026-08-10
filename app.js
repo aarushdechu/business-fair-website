@@ -165,7 +165,7 @@ async function lookupOrder(code,silent=false) {
 function openAccount() {
   $('#accountOverlay').hidden=false;
   document.body.style.overflow='hidden';
-  if(state.user) loadMyOrders();
+  if(state.user&&!state.user.isAdmin) loadMyOrders();
 }
 function closeAccount() { $('#accountOverlay').hidden=true;document.body.style.overflow=''; }
 function renderAccount() {
@@ -180,6 +180,7 @@ function renderAccount() {
   $('#accountAvatar').src=state.user.picture||'assets/logo.png';
   $('#accountSignedIn .account-person').classList.toggle('is-admin',Boolean(state.user.isAdmin));
   $('#accountAdminBtn').hidden=!state.user.isAdmin;
+  $('#accountOrders').hidden=Boolean(state.user.isAdmin);
 }
 async function loadMyOrders() {
   const box=$('#accountOrders');
@@ -207,7 +208,7 @@ async function setupGoogleSignIn() {
     if(!state.googleEnabled) { $('#googleSignInNote').textContent='Google sign-in needs a client ID in Render before it can appear here.';return; }
     await loadGoogleScript();
     google.accounts.id.initialize({client_id:config.googleClientId,callback:async response=>{
-      try { const session=await api('/auth/google',{method:'POST',body:JSON.stringify({credential:response.credential})});state.user=session.user;renderAccount();loadMyOrders();toast(`Signed in as ${state.user.name}`); }
+      try { const session=await api('/auth/google',{method:'POST',body:JSON.stringify({credential:response.credential})});state.user=session.user;renderAccount();if(!state.user.isAdmin)loadMyOrders();toast(`Signed in as ${state.user.name}`); }
       catch(error) { toast(error.message); }
     }});
     google.accounts.id.renderButton($('#googleSignInButton'),{theme:'filled_black',size:'large',shape:'rectangular',text:'signin_with',logo_alignment:'left',width:Math.min(360,window.innerWidth-72)});
@@ -410,7 +411,7 @@ $('#customerOrderForm').addEventListener('submit',async e=>{
     $('#customerOrderCode').dataset.copyCode=order.trackCode;
     $('#customerOrderEntry').hidden=true;$('#customerOrderSuccess').hidden=false;
     state.picks=[];save();syncPickButtons();renderDrawer();e.currentTarget.reset();
-    if(state.user)loadMyOrders();
+    if(state.user&&!state.user.isAdmin)loadMyOrders();
   } catch(error){toast(error.message);} finally {submit.disabled=false;}
 });
 $('#caseButton').addEventListener('click',openDrawer); $('#bottomPicksBtn').addEventListener('click',openDrawer); $('#closeDrawer').addEventListener('click',closeDrawer); $('#scrim').addEventListener('click',closeDrawer);
