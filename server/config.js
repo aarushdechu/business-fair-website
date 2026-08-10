@@ -13,11 +13,15 @@ export const resendApiKey = cleanEnv(process.env.RESEND_API_KEY);
 export const emailFrom = cleanEnv(process.env.EMAIL_FROM);
 export const gmailUser = cleanEnv(process.env.GMAIL_USER).toLowerCase();
 export const gmailAppPassword = cleanEnv(process.env.GMAIL_APP_PASSWORD).replace(/\s/g, '');
-export const emailProvider = gmailUser && gmailAppPassword
-  ? 'gmail'
-  : resendApiKey && emailFrom
-    ? 'resend'
-    : '';
+export const brevoApiKey = cleanEnv(process.env.BREVO_API_KEY);
+export const brevoSenderEmail = cleanEnv(process.env.BREVO_SENDER_EMAIL || process.env.GMAIL_USER).toLowerCase();
+export const emailProvider = brevoApiKey && brevoSenderEmail
+  ? 'brevo'
+  : gmailUser && gmailAppPassword
+    ? 'gmail'
+    : resendApiKey && emailFrom
+      ? 'resend'
+      : '';
 
 export const adminEmails = new Set([
   'dechu.avengers@gmail.com',

@@ -43,8 +43,9 @@ Run `npm run check` after changing JavaScript to check all server and browser fi
 The included `render.yaml` creates a Node web service and PostgreSQL database. Create a new Render Blueprint from this repository, then provide:
 
 - `STAFF_PIN`: the private PIN used to open the staff board.
-- `GMAIL_USER`: Gmail address used for ready notifications.
-- `GMAIL_APP_PASSWORD`: Google's 16-character App Password for that Gmail account.
+- `BREVO_API_KEY`: enables ready notifications over Brevo's HTTPS API.
+- `BREVO_SENDER_EMAIL`: the Gmail address verified as a sender in Brevo.
+- `GMAIL_USER` and `GMAIL_APP_PASSWORD`: SMTP fallback for paid Render instances only.
 - `RESEND_API_KEY` and `EMAIL_FROM`: optional alternative if you later use Resend with a verified domain.
 - `GOOGLE_CLIENT_ID`: optional; enables Google sign-in for customers.
 - `SESSION_SECRET`: a long random secret used to sign login cookies. The Render Blueprint generates this automatically.
@@ -65,11 +66,12 @@ The web app includes a manifest and service worker, so it can be installed from 
 
 ## Email setup
 
-For the simplest setup without a custom domain:
+For the simplest setup without a custom domain on Render's free plan:
 
-1. Turn on 2-Step Verification for the Gmail sender account.
-2. Create a Google App Password named `A Sketchy Business`.
-3. Add `GMAIL_USER` and `GMAIL_APP_PASSWORD` to the Render web service's environment variables, then redeploy.
-4. Check `/api/health`; it should report `"email":true` and `"emailProvider":"gmail"`.
+1. Create a Brevo account.
+2. Add the Gmail address as a sender and enter the six-digit verification code Brevo emails to it.
+3. Create a Brevo API key.
+4. Add `BREVO_API_KEY` and `BREVO_SENDER_EMAIL` to the Render web service's environment variables, then redeploy.
+5. Check `/api/health`; it should report `"email":true` and `"emailProvider":"brevo"`.
 
-The App Password is a secret: place it only in Render, never in this repository. Gmail is suitable for this small fair workflow but not bulk email. If both Gmail and Resend are configured, Gmail is used. Ready notifications are sent only for orders containing a personalized caricature when an admin changes the order status to `ready`.
+The API key is a secret: place it only in Render, never in this repository. Free Render services block Gmail's SMTP ports, so Gmail App Passwords work only after upgrading the Render instance. If multiple providers are configured, Brevo is preferred. Ready notifications are sent only for orders containing a personalized caricature when an admin changes the order status to `ready`.

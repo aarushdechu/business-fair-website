@@ -1,5 +1,7 @@
 import nodemailer from 'nodemailer';
 import {
+  brevoApiKey,
+  brevoSenderEmail,
   emailFrom,
   emailProvider,
   gmailAppPassword,
@@ -11,6 +13,7 @@ import { escapeHtml } from './utils.js';
 
 let gmailTransporter;
 let gmailVerification;
+let brevoVerification;
 
 function getGmailTransporter() {
   gmailTransporter ||= nodemailer.createTransport({
@@ -27,6 +30,9 @@ function getGmailTransporter() {
 }
 
 export function describeEmailError(error) {
+  if(error?.provider==='brevo' && error?.responseCode===401) return 'Brevo rejected the API key.';
+  if(error?.provider==='brevo' && error?.responseCode===400) return 'Brevo rejected the sender or recipient.';
+  if(error?.provider==='brevo') return 'Brevo could not send the message.';
   if(error?.code==='EAUTH' || error?.responseCode===535) return 'Gmail rejected the address or App Password.';
   if(['ECONNECTION','ETIMEDOUT','ESOCKET','EDNS'].includes(error?.code)) return 'The server could not connect to Gmail.';
   if(error?.responseCode===550) return 'Gmail rejected the recipient address.';
@@ -35,6 +41,16 @@ export function describeEmailError(error) {
 
 export async function getEmailDiagnostics() {
   if(!emailProvider)return { configured:false,ready:false,provider:null,problem:'Email credentials are missing.' };
+  if(emailProvider==='brevo'){
+    brevoVerification ||= fetch('https://api.brevo.com/v3/account',{
+      headers:{ accept:'application/json','api-key':brevoApiKey },
+      signal:AbortSignal.timeout(10_000)
+    }).then(response=>response.ok
+      ? { configured:true,ready:true,provider:'brevo',problem:null }
+      : { configured:true,ready:false,provider:'brevo',problem:response.status===401?'Brevo rejected the API key.':'Brevo account verification failed.' })
+      .catch(()=>({ configured:true,ready:false,provider:'brevo',problem:'The server could not connect to Brevo.' }));
+    return brevoVerification;
+  }
   if(emailProvider==='resend')return { configured:true,ready:true,provider:'resend',problem:null };
   gmailVerification ||= getGmailTransporter().verify()
     .then(()=>({ configured:true,ready:true,provider:'gmail',problem:null }))
@@ -56,6 +72,29 @@ async function sendWithGmail(order, message) {
     to:order.customer_email,
     ...message
   });
+}
+
+async function sendWithBrevo(order, message) {
+  const response=await fetch('https://api.brevo.com/v3/smtp/email',{
+    method:'POST',
+    headers:{
+      accept:'application/json',
+      'api-key':brevoApiKey,
+      'content-type':'application/json'
+    },
+    body:JSON.stringify({
+      sender:{ name:'A Sketchy Business',email:brevoSenderEmail },
+      to:[{ email:order.customer_email,name:order.customer_name }],
+      subject:message.subject,
+      htmlContent:message.html
+    })
+  });
+  if(!response.ok){
+    const error=new Error(`Brevo returned ${response.status}`);
+    error.provider='brevo';
+    error.responseCode=response.status;
+    throw error;
+  }
 }
 
 async function sendWithResend(order, message) {
@@ -81,7 +120,8 @@ export async function sendReadyEmail(order, requestOrigin) {
   }
 
   const message=readyMessage(order,requestOrigin);
-  if(emailProvider==='gmail')await sendWithGmail(order,message);
+  if(emailProvider==='brevo')await sendWithBrevo(order,message);
+  else if(emailProvider==='gmail')await sendWithGmail(order,message);
   else await sendWithResend(order,message);
   return { sent:true, provider:emailProvider };
 }
