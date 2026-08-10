@@ -14,7 +14,7 @@ if (!location.hash && !new URLSearchParams(location.search).has('track')) window
 
 const state = {
   picks: JSON.parse(localStorage.getItem('sketchy-picks') || '[]').filter(id=>products.some(product=>product.id===id)),
-  orders: JSON.parse(localStorage.getItem('sketchy-orders') || '[]').map(order=>({ ...order,email:order.email||'',trackCode:order.trackCode||'DEVICE-ONLY',updatedAt:order.updatedAt||order.createdAt })),
+  orders: JSON.parse(localStorage.getItem('sketchy-orders') || '[]').map(order=>({ ...order,email:order.email||'',updatedAt:order.updatedAt||order.createdAt })),
   orderFilter: 'active',
   staffPin: sessionStorage.getItem('sketchy-staff-pin') || '',
   backendAvailable: true,
@@ -27,7 +27,7 @@ let staffRefreshTimer;
 let filmTimer;
 let projectTaps=0;
 let logoTaps=0;
-let lastCustomerTrackingCode='';
+let lastCustomerOrderNumber='';
 
 const $ = (selector, root=document) => root.querySelector(selector);
 const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
@@ -121,7 +121,7 @@ function filteredOrders() {
 function renderOrders() {
   renderStats(); const orders=filteredOrders(); const box=$('#ordersList');
   if(!orders.length) { box.innerHTML=`<div class="empty-orders"><span>✓</span><h3>All clear!</h3><p>No orders in this view.</p></div>`; return; }
-  box.innerHTML=orders.map(o=>`<article class="order-card status-${o.status}"><div class="order-number"><div><small>ORDER</small><strong>#${o.number}</strong></div></div><div class="order-info"><h3>${escapeHtml(o.customer)}</h3><p><b>${o.items.map(id=>productById(id)?.name).filter(Boolean).join(' · ')}</b></p>${o.email?`<p>Updates: ${escapeHtml(o.email)}</p>`:''}${o.notes?`<p>Note: ${escapeHtml(o.notes)}</p>`:''}<p><b>Tracking code:</b> <button class="copy-code" data-copy-code="${o.trackCode}" type="button">${o.trackCode}</button></p><p>${new Date(o.createdAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</p></div><div class="order-actions"><select data-order-status="${o.id}" aria-label="Status for order ${o.number}"><option value="received" ${o.status==='received'?'selected':''}>Received</option><option value="drawing" ${o.status==='drawing'?'selected':''}>Making</option><option value="ready" ${o.status==='ready'?'selected':''}>Ready!</option><option value="picked-up" ${o.status==='picked-up'?'selected':''}>Picked up</option></select><button class="delete-order" data-delete-order="${o.id}" aria-label="Delete order ${o.number}" type="button">×</button></div></article>`).join('');
+  box.innerHTML=orders.map(o=>`<article class="order-card status-${o.status}"><div class="order-number"><div><small>ORDER</small><strong>#${o.number}</strong></div></div><div class="order-info"><h3>${escapeHtml(o.customer)}</h3><p><b>${o.items.map(id=>productById(id)?.name).filter(Boolean).join(' · ')}</b></p>${o.email?`<p>Updates: ${escapeHtml(o.email)}</p>`:''}${o.notes?`<p>Note: ${escapeHtml(o.notes)}</p>`:''}<p>${new Date(o.createdAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</p></div><div class="order-actions"><select data-order-status="${o.id}" aria-label="Status for order ${o.number}"><option value="received" ${o.status==='received'?'selected':''}>Received</option><option value="drawing" ${o.status==='drawing'?'selected':''}>Making</option><option value="ready" ${o.status==='ready'?'selected':''}>Ready!</option><option value="picked-up" ${o.status==='picked-up'?'selected':''}>Picked up</option></select><button class="delete-order" data-delete-order="${o.id}" aria-label="Delete order ${o.number}" type="button">×</button></div></article>`).join('');
 }
 function escapeHtml(value) { const d=document.createElement('div'); d.textContent=value; return d.innerHTML; }
 async function showStaff() {
@@ -144,21 +144,21 @@ async function showStaff() {
 function showStore() { clearInterval(staffRefreshTimer);$('#storeView').hidden=false; $('footer').hidden=false; $('#staffView').hidden=true; $('.site-header').hidden=false; $('#caseNav').hidden=false; $('#trackingFab').hidden=false; $('#mobileDock').hidden=false; window.scrollTo(0,0); }
 function updateClock() { const el=$('#staffClock'); if(el) el.textContent=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); }
 
-function openTracking(code='') {
+function openTracking(orderNumber='') {
   $('#trackingOverlay').hidden=false; document.body.style.overflow='hidden';
-  $('#trackingCode').value=code; $('#trackingResult').hidden=true;
-  if(code) lookupOrder(code); else setTimeout(()=>$('#trackingCode').focus(),50);
+  $('#trackingNumber').value=orderNumber; $('#trackingResult').hidden=true;
+  if(orderNumber) lookupOrder(orderNumber); else setTimeout(()=>$('#trackingNumber').focus(),50);
 }
 function closeTracking() { clearInterval(trackingRefreshTimer);$('#trackingOverlay').hidden=true;document.body.style.overflow=''; }
-async function lookupOrder(code,silent=false) {
+async function lookupOrder(orderNumber,silent=false) {
   const result=$('#trackingResult'); result.hidden=false; if(!silent)result.innerHTML='<p>Checking the evidence…</p>';
   try {
-    const order=await api(`/track/${encodeURIComponent(code.trim())}`);
+    const order=await api(`/track/${encodeURIComponent(orderNumber.trim())}`);
     const steps=['received','drawing','ready','picked-up'],current=Math.max(0,steps.indexOf(order.status));
     const labels={received:'Order received',drawing:'Being made',ready:'Ready to collect!', 'picked-up':'Picked up'};
     result.innerHTML=`<div class="tracking-head"><div><p class="eyebrow">Order #${order.number}</p><h3>Hi, ${escapeHtml(order.customer)}!</h3></div><span class="tracking-status">${labels[order.status]}</span></div><div class="status-track" aria-label="Order progress">${steps.map((step,i)=>`<span class="${i<=current?'done':''}" title="${labels[step]}"></span>`).join('')}</div><p><b>${order.items.map(id=>productById(id)?.name).filter(Boolean).join(' · ')}</b></p><p>${order.status==='ready'?'Your order is ready—come back to the stall and show us this screen.':order.status==='picked-up'?'Case closed. Thanks for visiting A Sketchy Business!':'We’ll update this page as your order moves along.'}</p><p class="tracking-updated">Last updated ${new Date(order.updatedAt).toLocaleString([],{hour:'numeric',minute:'2-digit',month:'short',day:'numeric'})}</p>`;
-    history.replaceState(null,'',`${location.pathname}?track=${encodeURIComponent(code.trim())}`);
-    clearInterval(trackingRefreshTimer);trackingRefreshTimer=setInterval(()=>lookupOrder(code,true),15000);
+    history.replaceState(null,'',`${location.pathname}?track=${encodeURIComponent(orderNumber.trim())}`);
+    clearInterval(trackingRefreshTimer);trackingRefreshTimer=setInterval(()=>lookupOrder(orderNumber,true),15000);
   } catch(error) { if(!silent)result.innerHTML=`<p><b>Case not found.</b><br>${escapeHtml(error.message)}</p>`; }
 }
 
@@ -189,7 +189,7 @@ async function loadMyOrders() {
     const orders=await api('/my-orders');
     if(!orders.length) { box.innerHTML='<p class="account-empty">No orders are connected to this Google email yet. Ask us to use this email when we enter your order at the stall.</p>';return; }
     const labels={received:'Received',drawing:'Being made',ready:'Ready!', 'picked-up':'Picked up'};
-    box.innerHTML=orders.map(order=>`<button class="account-order" data-account-track="${order.trackCode}" type="button"><strong>#${order.number}</strong><span>${order.items.map(id=>productById(id)?.name).filter(Boolean).join(' · ')}</span><b>${labels[order.status]}</b></button>`).join('');
+    box.innerHTML=orders.map(order=>`<button class="account-order" data-account-track="${order.number}" type="button"><strong>#${order.number}</strong><span>${order.items.map(id=>productById(id)?.name).filter(Boolean).join(' · ')}</span><b>${labels[order.status]}</b></button>`).join('');
   } catch(error) { box.innerHTML=`<p class="account-empty">${escapeHtml(error.message)}</p>`; }
 }
 function loadGoogleScript() {
@@ -213,7 +213,7 @@ async function setupGoogleSignIn() {
     }});
     google.accounts.id.renderButton($('#googleSignInButton'),{theme:'filled_black',size:'large',shape:'rectangular',text:'signin_with',logo_alignment:'left',width:Math.min(360,window.innerWidth-72)});
     $('#googleSignInNote').textContent='We only use your name and email to match your fair orders.';
-  } catch(error) { $('#googleSignInNote').textContent='Sign-in is temporarily unavailable. Tracking codes still work.'; }
+  } catch(error) { $('#googleSignInNote').textContent='Sign-in is temporarily unavailable. Order-number tracking still works.'; }
 }
 async function signOut() {
   try { await api('/auth/logout',{method:'POST'}); } catch (_) {}
@@ -377,7 +377,7 @@ document.addEventListener('click', async e => {
   const add=e.target.closest('[data-product]'); if(add) togglePick(add.dataset.product);
   const remove=e.target.closest('[data-remove]'); if(remove) togglePick(remove.dataset.remove);
   const orderFilter=e.target.closest('[data-status]'); if(orderFilter){ state.orderFilter=orderFilter.dataset.status; $$('.order-filters button').forEach(b=>b.classList.toggle('active',b===orderFilter)); renderOrders(); }
-  const copy=e.target.closest('[data-copy-code]'); if(copy){ await navigator.clipboard?.writeText(copy.dataset.copyCode); toast('Tracking code copied'); }
+  const copy=e.target.closest('[data-copy-value]'); if(copy){ await navigator.clipboard?.writeText(copy.dataset.copyValue); toast('Order number copied'); }
   const accountOrder=e.target.closest('[data-account-track]'); if(accountOrder){ closeAccount();openTracking(accountOrder.dataset.accountTrack); }
   const del=e.target.closest('[data-delete-order]'); if(del && confirm('Delete this order?')) { try { if(state.backendAvailable)await api(`/orders/${del.dataset.deleteOrder}`,{method:'DELETE',staff:true}); state.orders=state.orders.filter(o=>o.id!==del.dataset.deleteOrder);save();renderOrders(); } catch(error){ toast(error.message); } }
 });
@@ -395,8 +395,8 @@ $('#orderForm').addEventListener('submit', async e => {
   const submit=e.currentTarget.querySelector('[type="submit"]');submit.disabled=true;
   try {
     const payload={customer:data.get('customerName').trim(),email:data.get('customerEmail').trim(),items,notes:data.get('notes').trim()};
-    const order=state.backendAvailable?await api('/orders',{method:'POST',staff:true,body:JSON.stringify(payload)}):{id:crypto.randomUUID?.()||String(Date.now()),number:nextOrderNumber(),...payload,status:'received',trackCode:'DEVICE-ONLY',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),emailSent:false};
-    state.orders.unshift(order);save();e.currentTarget.reset();renderOrders();toast(`Order #${order.number} created${order.emailSent?' and emailed':''}! Code: ${order.trackCode}`);
+    const order=state.backendAvailable?await api('/orders',{method:'POST',staff:true,body:JSON.stringify(payload)}):{id:crypto.randomUUID?.()||String(Date.now()),number:nextOrderNumber(),...payload,status:'received',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),emailSent:false};
+    state.orders.unshift(order);save();e.currentTarget.reset();renderOrders();toast(`Order #${order.number} created${order.emailSent?' and emailed':''}!`);
   } catch(error) { toast(error.message); } finally { submit.disabled=false; }
 });
 $('#customerOrderForm').addEventListener('submit',async e=>{
@@ -405,10 +405,10 @@ $('#customerOrderForm').addEventListener('submit',async e=>{
   const submit=e.currentTarget.querySelector('[type="submit"]'),data=new FormData(e.currentTarget);submit.disabled=true;
   try {
     const order=await api('/public-orders',{method:'POST',body:JSON.stringify({customer:data.get('customer').trim(),email:data.get('email').trim(),notes:data.get('notes').trim(),items:[...state.picks]})});
-    lastCustomerTrackingCode=order.trackCode;
+    lastCustomerOrderNumber=order.number;
     $('#customerOrderNumber').textContent=`#${order.number}`;
-    $('#customerOrderCode').textContent=`Tracking code: ${order.trackCode}`;
-    $('#customerOrderCode').dataset.copyCode=order.trackCode;
+    $('#customerOrderNumberCopy').textContent=`Order number: #${order.number}`;
+    $('#customerOrderNumberCopy').dataset.copyValue=order.number;
     $('#customerOrderEntry').hidden=true;$('#customerOrderSuccess').hidden=false;
     state.picks=[];save();syncPickButtons();renderDrawer();e.currentTarget.reset();
     if(state.user&&!state.user.isAdmin)loadMyOrders();
@@ -420,9 +420,9 @@ $('#mobileAccountBtn').addEventListener('click',openAccount);$('#accountNavBtn')
 $('#accountAdminBtn').addEventListener('click',()=>{ closeAccount();showStaff(); });
 $('#staffNavBtn').addEventListener('click',showStaff); $('#backStoreBtn').addEventListener('click',showStore);
 $('#trackNavBtn').addEventListener('click',()=>openTracking()); $('#trackingFab').addEventListener('click',()=>openTracking()); $('#closeTracking').addEventListener('click',closeTracking); $('#trackingOverlay').addEventListener('click',e=>{if(e.target===$('#trackingOverlay'))closeTracking();});
-$('#trackingForm').addEventListener('submit',e=>{e.preventDefault();lookupOrder(new FormData(e.currentTarget).get('trackingCode'));});
+$('#trackingForm').addEventListener('submit',e=>{e.preventDefault();lookupOrder(new FormData(e.currentTarget).get('orderNumber'));});
 $('#showAtStallBtn').addEventListener('click',openCustomerOrder);$('#closeCustomerOrder').addEventListener('click',closeCustomerOrder);$('#customerOrderOverlay').addEventListener('click',e=>{if(e.target===$('#customerOrderOverlay'))closeCustomerOrder();});
-$('#customerTrackBtn').addEventListener('click',()=>{closeCustomerOrder();openTracking(lastCustomerTrackingCode);});
+$('#customerTrackBtn').addEventListener('click',()=>{closeCustomerOrder();openTracking(lastCustomerOrderNumber);});
 $('#skipFilm').addEventListener('click',finishOpeningFilm);
 $('#projectStamp').addEventListener('click',()=>{ const messages=['Summer project classified.','Built with paper, yarn, ink, and snacks.','Two young makers. Zero boring products.','Secret unlocked: creativity is the whole operation.'];toast(messages[projectTaps%messages.length]);projectTaps+=1;if(projectTaps%4===0)burstConfetti(); });
 $('.brand').addEventListener('click',()=>{logoTaps+=1;if(logoTaps===3){toast('Logo tapped 3× — extremely sketchy behavior.');burstConfetti();logoTaps=0;} });

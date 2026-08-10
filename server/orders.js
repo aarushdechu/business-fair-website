@@ -14,7 +14,6 @@ function rowToOrder(row) {
     items:row.items,
     notes:row.notes || '',
     status:row.status,
-    trackCode:row.tracking_code,
     createdAt:row.created_at,
     updatedAt:row.updated_at
   };
@@ -67,14 +66,13 @@ export function registerOrderRoutes(app, limits) {
     if (!requireDatabase(res)) return;
     try {
       const result = await pool.query(
-        'SELECT number,items,status,tracking_code,created_at,updated_at FROM orders WHERE LOWER(customer_email)=$1 ORDER BY created_at DESC LIMIT 30',
+        'SELECT number,items,status,created_at,updated_at FROM orders WHERE LOWER(customer_email)=$1 ORDER BY created_at DESC LIMIT 30',
         [req.user.email]
       );
       res.json(result.rows.map(row => ({
         number:String(row.number),
         items:row.items,
         status:row.status,
-        trackCode:row.tracking_code,
         createdAt:row.created_at,
         updatedAt:row.updated_at
       })));
@@ -166,16 +164,21 @@ export function registerOrderRoutes(app, limits) {
     }
   });
 
-  app.get('/api/track/:code', limits.tracking, async (req, res, next) => {
+  app.get('/api/track/:reference', limits.tracking, async (req, res, next) => {
     if (!requireDatabase(res)) return;
-    const code = clean(req.params.code, 30);
+    const reference = clean(req.params.reference, 30);
     try {
-      const result = await pool.query(
-        'SELECT number,customer_name,items,status,created_at,updated_at FROM orders WHERE tracking_code=$1',
-        [code]
-      );
+      const result = /^\d{1,9}$/.test(reference)
+        ? await pool.query(
+            'SELECT number,customer_name,items,status,created_at,updated_at FROM orders WHERE number=$1',
+            [reference]
+          )
+        : await pool.query(
+            'SELECT number,customer_name,items,status,created_at,updated_at FROM orders WHERE tracking_code=$1',
+            [reference]
+          );
       if (!result.rowCount) {
-        return res.status(404).json({ error:'We could not find that tracking code.' });
+        return res.status(404).json({ error:'We could not find that order number.' });
       }
 
       const row = result.rows[0];

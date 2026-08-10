@@ -50,13 +50,13 @@ The included `render.yaml` creates a Node web service and PostgreSQL database. C
 
 The existing static Render service cannot become a web service in place. Create the Blueprint service, verify it works, then point your custom domain to the new service if you use one.
 
-The server creates its `orders` table automatically. Customers receive a random private tracking code. The public tracking endpoint returns only the order name, items, status, and timestamps; email addresses and staff notes remain private.
+The server creates its `orders` table automatically. Customers track progress with their short order number. Older private tracking-code links continue to work for existing orders. The public tracking endpoint returns only the order name, items, status, and timestamps; email addresses and staff notes remain private.
 
 ## Google sign-in
 
 Create a **Web application** OAuth client in Google Cloud Console. Add `https://a-sketchy-business.onrender.com` as an authorized JavaScript origin, then copy its client ID into Render as `GOOGLE_CLIENT_ID`. No client secret is placed in the browser.
 
-Sign-in is optional. The server verifies Google's ID token, stores a signed HTTP-only session cookie, and only uses the verified email to find orders entered with the same email. Tracking codes continue to work for everyone.
+Sign-in is optional. The server verifies Google's ID token, stores a signed HTTP-only session cookie, and only uses the verified email to find orders entered with the same email. Order-number tracking works for everyone.
 
 ## Installable website
 
@@ -64,4 +64,4 @@ The web app includes a manifest and service worker, so it can be installed from 
 
 ## Email setup
 
-Create a Resend account, verify a sending domain, and add the API key and sender to Render's environment variables. Without those two values, order tracking still works and staff can copy the tracking code for the customer, but emails are skipped.
+Create a Resend account, verify a sending domain, and add the API key and sender to Render's environment variables. Without those two values, order tracking still works, but emails are skipped.

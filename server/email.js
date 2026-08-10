@@ -9,7 +9,7 @@ export async function sendReadyEmail(order, requestOrigin) {
     return { sent:false, reason:'Email is not configured.' };
   }
 
-  const trackingUrl = `${publicUrl || requestOrigin}/?track=${encodeURIComponent(order.tracking_code)}`;
+  const trackingUrl = `${publicUrl || requestOrigin}/?track=${encodeURIComponent(order.number)}`;
   const response = await fetch('https://api.resend.com/emails', {
     method:'POST',
     headers:{
@@ -22,7 +22,7 @@ export async function sendReadyEmail(order, requestOrigin) {
       from:emailFrom,
       to:[order.customer_email],
       subject:`Order #${order.number}: Your order is ready!`,
-      html:`<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#181816"><h1 style="font-size:30px">Your order is ready!</h1><p>Hi ${escapeHtml(order.customer_name)},</p><p>Your A Sketchy Business order <strong>#${order.number}</strong> is now <strong>ready</strong>.</p><p><a href="${trackingUrl}" style="display:inline-block;background:#ee672d;color:white;padding:13px 18px;text-decoration:none;font-weight:bold">Check your order</a></p><p style="color:#666">Private tracking code: ${order.tracking_code}</p></div>`
+      html:`<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#181816"><h1 style="font-size:30px">Your order is ready!</h1><p>Hi ${escapeHtml(order.customer_name)},</p><p>Your A Sketchy Business order <strong>#${order.number}</strong> is now <strong>ready</strong>.</p><p><a href="${trackingUrl}" style="display:inline-block;background:#ee672d;color:white;padding:13px 18px;text-decoration:none;font-weight:bold">Check your order</a></p><p style="color:#666">Order number: #${order.number}</p></div>`
     })
   });
 

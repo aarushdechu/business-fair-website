@@ -126,7 +126,7 @@
         </div>
         <div class="steps">
           <article><span>01</span><div class="step-icon">⌕</div><h3>Browse the collection</h3><p>Scroll through everything here and add your favorites directly to “My picks.”</p></article>
-          <article><span>02</span><div class="step-icon">⌖</div><h3>Place your order</h3><p>Open “My picks,” submit your official order, and save the private tracking code. No payment yet.</p></article>
+          <article><span>02</span><div class="step-icon">⌖</div><h3>Place your order</h3><p>Open “My picks,” submit your official order, and remember your order number. No payment yet.</p></article>
           <article><span>03</span><div class="step-icon">✓</div><h3>Track, hear, collect</h3><p>Watch the progress online. When we call your order number, collect it and pay at the stall.</p></article>
         </div>
       </section>
@@ -168,7 +168,7 @@
       <div class="drawer-head"><div><p class="eyebrow">Your evidence bag</p><h2 id="drawerTitle">My picks</h2></div><button class="icon-button" id="closeDrawer" type="button" aria-label="Close">×</button></div>
       <div class="drawer-items" id="drawerItems"></div>
       <div class="drawer-foot">
-        <p><b>Order now, pay at pickup.</b> Submit your picks, then follow the private tracking code until we call your order number.</p>
+        <p><b>Order now, pay at pickup.</b> Submit your picks, then follow your order number until we call it at the stall.</p>
         <button class="button button-orange full" id="showAtStallBtn" type="button">Make this an official order <span>→</span></button>
       </div>
     </aside>
@@ -194,8 +194,8 @@
           <span>Listen for</span>
           <strong id="customerOrderNumber">#000</strong>
           <h2>You're in<br /><em>the queue!</em></h2>
-          <p>Keep your private tracking code. We’ll update your progress, and we’ll call this order number when it’s ready.</p>
-          <button class="copy-code customer-code" id="customerOrderCode" type="button"></button>
+          <p>Remember this order number. Use it to check your progress, and listen for us to call it when your order is ready.</p>
+          <button class="copy-code customer-code" id="customerOrderNumberCopy" type="button"></button>
           <button class="button button-orange full" id="customerTrackBtn" type="button">Track my order <span>→</span></button>
         </div>
       </section>
@@ -206,7 +206,7 @@
         <p class="eyebrow">Live case tracker</p>
         <h2 id="trackingTitle">Where’s my <em>order?</em></h2>
         <form id="trackingForm">
-          <label>Private tracking code<input id="trackingCode" name="trackingCode" required autocomplete="off" placeholder="Code from the stall or email" /></label>
+          <label>Order number<input id="trackingNumber" name="orderNumber" required inputmode="numeric" pattern="[0-9]*" autocomplete="off" placeholder="For example: 101" /></label>
           <button class="button button-orange full" type="submit">Check my order <span>→</span></button>
         </form>
         <div class="tracking-result" id="trackingResult" hidden></div>
@@ -218,7 +218,7 @@
         <p class="eyebrow">Your pocket case file</p>
         <h2 id="accountTitle">Sign in on<br /><em>this phone.</em></h2>
         <div id="accountSignedOut">
-          <p>Google sign-in is optional. It can show orders connected to your email without making you type a tracking code.</p>
+          <p>Google sign-in is optional. It can show orders connected to your email without making you type an order number.</p>
           <div class="google-glitch-shell" data-glitch="SIGN IN WITH GOOGLE">
             <div id="googleSignInButton"></div>
           </div>
