@@ -26,7 +26,7 @@ services:
       - key: SESSION_SECRET
         generateValue: true
       - key: PUBLIC_URL
-        value: https://a-sketchy-business.onrender.com
+        value: https://a-sketchy-business-app.onrender.com
 
 databases:
   - name: sketchy-orders

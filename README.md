@@ -54,7 +54,7 @@ The server creates its `orders` table automatically. Customers track progress wi
 
 ## Google sign-in
 
-Create a **Web application** OAuth client in Google Cloud Console. Add `https://a-sketchy-business.onrender.com` as an authorized JavaScript origin, then copy its client ID into Render as `GOOGLE_CLIENT_ID`. No client secret is placed in the browser.
+Create a **Web application** OAuth client in Google Cloud Console. Add `https://a-sketchy-business-app.onrender.com` as an authorized JavaScript origin, then copy its client ID into Render as `GOOGLE_CLIENT_ID`. No client secret is placed in the browser.
 
 Sign-in is optional. The server verifies Google's ID token, stores a signed HTTP-only session cookie, and only uses the verified email to find orders entered with the same email. Order-number tracking works for everyone.
 
