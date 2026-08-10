@@ -33,9 +33,9 @@ Create a **Web application** OAuth client in Google Cloud Console. Add `https://
 
 Sign-in is optional. The server verifies Google's ID token, stores a signed HTTP-only session cookie, and only uses the verified email to find orders entered with the same email. Tracking codes continue to work for everyone.
 
-## Installable and store apps
+## Installable website
 
-The web app includes a manifest and service worker, so it can be installed from a phone browser with **Add to Home Screen**. Native Apple and Android shell setup is under `mobile/`; read `mobile/README.md` before starting either store submission.
+The web app includes a manifest and service worker, so it can be installed from a phone browser with **Add to Home Screen**.
 
 ## Email setup
 
