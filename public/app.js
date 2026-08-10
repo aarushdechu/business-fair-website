@@ -398,7 +398,12 @@ function setupScrollExperience() {
   window.addEventListener('scroll', () => { if (!ticking) { ticking=true; requestAnimationFrame(updateScroll); } }, { passive:true });
   window.addEventListener('resize',updateScroll);
   window.addEventListener('load',()=>{
-    if (location.hash) setTimeout(()=>{ try { $(location.hash)?.scrollIntoView({behavior:'instant',block:'start'}); } catch (_) {} updateScroll(); },120);
+    if (location.hash) setTimeout(()=>{ try {
+      const root=document.documentElement;
+      root.style.scrollBehavior='auto';
+      $(location.hash)?.scrollIntoView({block:'start'});
+      requestAnimationFrame(()=>root.style.removeProperty('scroll-behavior'));
+    } catch (_) {} updateScroll(); },120);
     requestAnimationFrame(updateScroll);
   },{once:true});
   window.addEventListener('hashchange',()=>requestAnimationFrame(updateScroll));
