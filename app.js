@@ -27,6 +27,7 @@ let staffRefreshTimer;
 let filmTimer;
 let projectTaps=0;
 let logoTaps=0;
+let lastCustomerTrackingCode='';
 
 const $ = (selector, root=document) => root.querySelector(selector);
 const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
@@ -84,6 +85,20 @@ function renderDrawer() {
 
 function openDrawer() { $('#caseDrawer').classList.add('open'); $('#caseDrawer').setAttribute('aria-hidden','false'); $('#scrim').hidden=false; document.body.style.overflow='hidden'; }
 function closeDrawer() { $('#caseDrawer').classList.remove('open'); $('#caseDrawer').setAttribute('aria-hidden','true'); $('#scrim').hidden=true; document.body.style.overflow=''; }
+function openCustomerOrder() {
+  if(!state.picks.length){toast('Add something to My Picks first');return;}
+  closeDrawer();
+  const selected=state.picks.map(productById).filter(Boolean),hasCaricature=state.picks.includes('caricature');
+  $('#customerOrderSummary').innerHTML=selected.map(product=>`<div><span>${escapeHtml(product.name)}</span><b>${escapeHtml(product.price)}</b></div>`).join('');
+  $('#customerOrderEntry').hidden=false;$('#customerOrderSuccess').hidden=true;
+  const name=$('#publicCustomerName'),email=$('#publicCustomerEmail');
+  if(state.user){name.value=state.user.name||'';email.value=state.user.email||'';}
+  email.required=hasCaricature;
+  $('#publicEmailHint').textContent=hasCaricature?'Required for caricatures':'Optional';
+  $('#customerOrderOverlay').hidden=false;document.body.style.overflow='hidden';
+  setTimeout(()=>name.focus(),50);
+}
+function closeCustomerOrder() { $('#customerOrderOverlay').hidden=true;document.body.style.overflow=''; }
 let toastTimer;
 function toast(message) { const el=$('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),2200); }
 
@@ -96,7 +111,7 @@ function renderStats() {
   const drawing=state.orders.filter(o=>o.status==='drawing').length;
   const ready=state.orders.filter(o=>o.status==='ready').length;
   const done=state.orders.filter(o=>o.status==='picked-up').length;
-  $('#staffStats').innerHTML = [[active,'Active orders'],[drawing,'Being drawn'],[ready,'Ready now'],[done,'Picked up']].map(([n,l])=>`<div class="stat"><strong>${n}</strong><span>${l}</span></div>`).join('');
+  $('#staffStats').innerHTML = [[active,'Active orders'],[drawing,'Being made'],[ready,'Ready now'],[done,'Picked up']].map(([n,l])=>`<div class="stat"><strong>${n}</strong><span>${l}</span></div>`).join('');
 }
 function filteredOrders() {
   if(state.orderFilter==='ready') return state.orders.filter(o=>o.status==='ready');
@@ -106,7 +121,7 @@ function filteredOrders() {
 function renderOrders() {
   renderStats(); const orders=filteredOrders(); const box=$('#ordersList');
   if(!orders.length) { box.innerHTML=`<div class="empty-orders"><span>✓</span><h3>All clear!</h3><p>No orders in this view.</p></div>`; return; }
-  box.innerHTML=orders.map(o=>`<article class="order-card status-${o.status}"><div class="order-number"><div><small>ORDER</small><strong>#${o.number}</strong></div></div><div class="order-info"><h3>${escapeHtml(o.customer)}</h3><p><b>${o.items.map(id=>productById(id)?.name).filter(Boolean).join(' · ')}</b></p>${o.email?`<p>Updates: ${escapeHtml(o.email)}</p>`:''}${o.notes?`<p>Note: ${escapeHtml(o.notes)}</p>`:''}<p><b>Tracking code:</b> <button class="copy-code" data-copy-code="${o.trackCode}" type="button">${o.trackCode}</button></p><p>${new Date(o.createdAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</p></div><div class="order-actions"><select data-order-status="${o.id}" aria-label="Status for order ${o.number}"><option value="received" ${o.status==='received'?'selected':''}>Received</option><option value="drawing" ${o.status==='drawing'?'selected':''}>Drawing</option><option value="ready" ${o.status==='ready'?'selected':''}>Ready!</option><option value="picked-up" ${o.status==='picked-up'?'selected':''}>Picked up</option></select><button class="delete-order" data-delete-order="${o.id}" aria-label="Delete order ${o.number}" type="button">×</button></div></article>`).join('');
+  box.innerHTML=orders.map(o=>`<article class="order-card status-${o.status}"><div class="order-number"><div><small>ORDER</small><strong>#${o.number}</strong></div></div><div class="order-info"><h3>${escapeHtml(o.customer)}</h3><p><b>${o.items.map(id=>productById(id)?.name).filter(Boolean).join(' · ')}</b></p>${o.email?`<p>Updates: ${escapeHtml(o.email)}</p>`:''}${o.notes?`<p>Note: ${escapeHtml(o.notes)}</p>`:''}<p><b>Tracking code:</b> <button class="copy-code" data-copy-code="${o.trackCode}" type="button">${o.trackCode}</button></p><p>${new Date(o.createdAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</p></div><div class="order-actions"><select data-order-status="${o.id}" aria-label="Status for order ${o.number}"><option value="received" ${o.status==='received'?'selected':''}>Received</option><option value="drawing" ${o.status==='drawing'?'selected':''}>Making</option><option value="ready" ${o.status==='ready'?'selected':''}>Ready!</option><option value="picked-up" ${o.status==='picked-up'?'selected':''}>Picked up</option></select><button class="delete-order" data-delete-order="${o.id}" aria-label="Delete order ${o.number}" type="button">×</button></div></article>`).join('');
 }
 function escapeHtml(value) { const d=document.createElement('div'); d.textContent=value; return d.innerHTML; }
 async function showStaff() {
@@ -379,9 +394,24 @@ $('#orderForm').addEventListener('submit', async e => {
   const submit=e.currentTarget.querySelector('[type="submit"]');submit.disabled=true;
   try {
     const payload={customer:data.get('customerName').trim(),email:data.get('customerEmail').trim(),items,notes:data.get('notes').trim()};
-    const order=state.backendAvailable?await api('/orders',{method:'POST',staff:true,body:JSON.stringify(payload)}):{id:crypto.randomUUID?.()||String(Date.now()),number:nextOrderNumber(),...payload,status:items.includes('caricature')?'drawing':'received',trackCode:'DEVICE-ONLY',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),emailSent:false};
+    const order=state.backendAvailable?await api('/orders',{method:'POST',staff:true,body:JSON.stringify(payload)}):{id:crypto.randomUUID?.()||String(Date.now()),number:nextOrderNumber(),...payload,status:'received',trackCode:'DEVICE-ONLY',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString(),emailSent:false};
     state.orders.unshift(order);save();e.currentTarget.reset();renderOrders();toast(`Order #${order.number} created${order.emailSent?' and emailed':''}! Code: ${order.trackCode}`);
   } catch(error) { toast(error.message); } finally { submit.disabled=false; }
+});
+$('#customerOrderForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(!state.picks.length){closeCustomerOrder();toast('Your picks are empty');return;}
+  const submit=e.currentTarget.querySelector('[type="submit"]'),data=new FormData(e.currentTarget);submit.disabled=true;
+  try {
+    const order=await api('/public-orders',{method:'POST',body:JSON.stringify({customer:data.get('customer').trim(),email:data.get('email').trim(),notes:data.get('notes').trim(),items:[...state.picks]})});
+    lastCustomerTrackingCode=order.trackCode;
+    $('#customerOrderNumber').textContent=`#${order.number}`;
+    $('#customerOrderCode').textContent=`Tracking code: ${order.trackCode}`;
+    $('#customerOrderCode').dataset.copyCode=order.trackCode;
+    $('#customerOrderEntry').hidden=true;$('#customerOrderSuccess').hidden=false;
+    state.picks=[];save();syncPickButtons();renderDrawer();e.currentTarget.reset();
+    if(state.user)loadMyOrders();
+  } catch(error){toast(error.message);} finally {submit.disabled=false;}
 });
 $('#caseButton').addEventListener('click',openDrawer); $('#bottomPicksBtn').addEventListener('click',openDrawer); $('#closeDrawer').addEventListener('click',closeDrawer); $('#scrim').addEventListener('click',closeDrawer);
 $('#mobilePicksBtn').addEventListener('click',openDrawer); $('#mobileTrackBtn').addEventListener('click',()=>openTracking());
@@ -390,12 +420,13 @@ $('#accountAdminBtn').addEventListener('click',()=>{ closeAccount();showStaff();
 $('#staffNavBtn').addEventListener('click',showStaff); $('#backStoreBtn').addEventListener('click',showStore);
 $('#trackNavBtn').addEventListener('click',()=>openTracking()); $('#trackingFab').addEventListener('click',()=>openTracking()); $('#closeTracking').addEventListener('click',closeTracking); $('#trackingOverlay').addEventListener('click',e=>{if(e.target===$('#trackingOverlay'))closeTracking();});
 $('#trackingForm').addEventListener('submit',e=>{e.preventDefault();lookupOrder(new FormData(e.currentTarget).get('trackingCode'));});
-$('#showAtStallBtn').addEventListener('click',()=>{ toast('Show this screen to us at the stall!'); });
+$('#showAtStallBtn').addEventListener('click',openCustomerOrder);$('#closeCustomerOrder').addEventListener('click',closeCustomerOrder);$('#customerOrderOverlay').addEventListener('click',e=>{if(e.target===$('#customerOrderOverlay'))closeCustomerOrder();});
+$('#customerTrackBtn').addEventListener('click',()=>{closeCustomerOrder();openTracking(lastCustomerTrackingCode);});
 $('#skipFilm').addEventListener('click',finishOpeningFilm);
 $('#projectStamp').addEventListener('click',()=>{ const messages=['Summer project classified.','Built with paper, yarn, ink, and snacks.','Two young makers. Zero boring products.','Secret unlocked: creativity is the whole operation.'];toast(messages[projectTaps%messages.length]);projectTaps+=1;if(projectTaps%4===0)burstConfetti(); });
 $('.brand').addEventListener('click',()=>{logoTaps+=1;if(logoTaps===3){toast('Logo tapped 3× — extremely sketchy behavior.');burstConfetti();logoTaps=0;} });
 $('#clearDoneBtn').addEventListener('click',async()=>{ const count=state.orders.filter(o=>o.status==='picked-up').length; if(count && confirm(`Clear ${count} picked-up order${count===1?'':'s'}?`)){ try { if(state.backendAvailable)await api('/orders/picked-up',{method:'DELETE',staff:true});state.orders=state.orders.filter(o=>o.status!=='picked-up');save();renderOrders(); } catch(error){toast(error.message);} } });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeDrawer();closeTracking();closeAccount();finishOpeningFilm(); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeDrawer();closeTracking();closeCustomerOrder();closeAccount();finishOpeningFilm(); } });
 setInterval(updateClock,30000);
 renderProductStory(); renderDrawer(); syncPickButtons(); renderStaffProducts(); renderOrders(); updateClock();
 setupOpeningFilm();

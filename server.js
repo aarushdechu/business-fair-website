@@ -71,7 +71,8 @@ function requireUser(req,res,next) { const user=readSession(req);if(!user)return
 function sessionCookie(value,maxAge=604800) { return `sketchy_session=${value}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${maxAge}${process.env.NODE_ENV==='production'?'; Secure':''}`; }
 function rateLimit(limit,windowMs) {
   return (req,res,next) => {
-    const key=`${req.ip}:${req.path.startsWith('/api/track')?'track':'staff'}`,now=Date.now();
+    const bucket=req.path.startsWith('/api/track')?'track':req.path==='/api/public-orders'?'public-order':req.path.startsWith('/api/auth')?'auth':'staff';
+    const key=`${req.ip}:${bucket}`,now=Date.now();
     let entry=requestWindows.get(key);
     if(!entry || now-entry.started>windowMs) entry={started:now,count:0};
     entry.count+=1;requestWindows.set(key,entry);
@@ -79,7 +80,7 @@ function rateLimit(limit,windowMs) {
     next();
   };
 }
-const limitStaff=rateLimit(40,60_000),limitTracking=rateLimit(25,60_000),limitAuth=rateLimit(12,60_000);
+const limitStaff=rateLimit(40,60_000),limitTracking=rateLimit(25,60_000),limitAuth=rateLimit(12,60_000),limitPublicOrders=rateLimit(12,60_000);
 
 async function verifyGoogleCredential(credential) {
   if(!googleClientId||sessionSecret.length<24)throw new Error('Google sign-in is not configured.');
@@ -90,6 +91,7 @@ async function verifyGoogleCredential(credential) {
 }
 
 async function sendOrderEmail(order, origin) {
+  if (!order.items?.includes('caricature') || order.status!=='ready') return { sent:false, reason:'A ready email is only sent for caricatures.' };
   if (!order.customer_email || !process.env.RESEND_API_KEY || !process.env.EMAIL_FROM) return { sent:false, reason:'Email is not configured.' };
   const labels={received:'Order received',drawing:'Your caricature is being drawn',ready:'Your order is ready!', 'picked-up':'Order picked up'};
   const trackingUrl=`${process.env.PUBLIC_URL || origin}/?track=${encodeURIComponent(order.tracking_code)}`;
@@ -107,6 +109,25 @@ async function sendOrderEmail(order, origin) {
   return { sent:true };
 }
 function escapeEmail(value) { return String(value).replace(/[&<>"']/g,char=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[char])); }
+function orderInput(body={}) {
+  return {
+    customer:clean(body.customer,80),
+    email:clean(body.email,180).toLowerCase(),
+    items:[...new Set(Array.isArray(body.items)?body.items.filter(id=>productIds.has(id)):[])],
+    notes:clean(body.notes,1000)
+  };
+}
+function orderInputError({customer,email,items}) {
+  if (!customer || !items.length) return 'Enter your name and choose at least one item.';
+  if (email && !/^\S+@\S+\.\S+$/.test(email)) return 'Enter a valid email address.';
+  if (items.includes('caricature') && !email) return 'Add an email so we can tell you when your caricature is ready.';
+  return '';
+}
+async function insertOrder({customer,email,items,notes}) {
+  const id=crypto.randomUUID(),trackingCode=crypto.randomBytes(9).toString('base64url');
+  const result=await pool.query('INSERT INTO orders (id,customer_name,customer_email,items,notes,status,tracking_code) VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7) RETURNING *',[id,customer,email||null,JSON.stringify(items),notes,'received',trackingCode]);
+  return result.rows[0];
+}
 
 app.get('/api/health', async (_req,res) => {
   if (!pool) return res.status(503).json({ ok:false, database:false });
@@ -132,6 +153,14 @@ app.get('/api/my-orders',limitTracking,requireUser,async(req,res,next)=>{
   } catch(error) { next(error); }
 });
 
+app.post('/api/public-orders',limitPublicOrders,async(req,res,next)=>{
+  if(!requireDatabase(res))return;
+  const input=orderInput(req.body),error=orderInputError(input);
+  if(error)return res.status(400).json({error});
+  try { res.status(201).json(rowToOrder(await insertOrder(input))); }
+  catch(error) { next(error); }
+});
+
 app.get('/api/orders', limitStaff, requireStaff, async (_req,res,next) => {
   if (!requireDatabase(res)) return;
   try { const result=await pool.query('SELECT * FROM orders ORDER BY created_at DESC'); res.json(result.rows.map(rowToOrder)); } catch(error) { next(error); }
@@ -139,17 +168,11 @@ app.get('/api/orders', limitStaff, requireStaff, async (_req,res,next) => {
 
 app.post('/api/orders', limitStaff, requireStaff, async (req,res,next) => {
   if (!requireDatabase(res)) return;
-  const customer=clean(req.body.customer,80), email=clean(req.body.email,180).toLowerCase(), notes=clean(req.body.notes,1000);
-  const items=Array.isArray(req.body.items)?req.body.items.filter(id=>productIds.has(id)):[];
-  if (!customer || !items.length) return res.status(400).json({ error:'A customer and at least one item are required.' });
-  if (email && !/^\S+@\S+\.\S+$/.test(email)) return res.status(400).json({ error:'Enter a valid email address.' });
-  const id=crypto.randomUUID(), trackingCode=crypto.randomBytes(9).toString('base64url');
-  const initialStatus=items.includes('caricature')?'drawing':'received';
+  const input=orderInput(req.body),error=orderInputError(input);
+  if(error)return res.status(400).json({error});
   try {
-    const result=await pool.query('INSERT INTO orders (id,customer_name,customer_email,items,notes,status,tracking_code) VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7) RETURNING *',[id,customer,email||null,JSON.stringify(items),notes,initialStatus,trackingCode]);
-    const order=result.rows[0]; let emailSent=false;
-    try { emailSent=(await sendOrderEmail(order,`${req.protocol}://${req.get('host')}`)).sent; } catch(error) { console.error('Email failed:',error.message); }
-    res.status(201).json({ ...rowToOrder(order), emailSent });
+    const order=await insertOrder(input);
+    res.status(201).json({ ...rowToOrder(order), emailSent:false });
   } catch(error) { next(error); }
 });
 

@@ -126,8 +126,8 @@
         </div>
         <div class="steps">
           <article><span>01</span><div class="step-icon">⌕</div><h3>Browse the collection</h3><p>Scroll through everything here and add your favorites directly to “My picks.”</p></article>
-          <article><span>02</span><div class="step-icon">⌖</div><h3>Visit the stall</h3><p>Show us your list. We'll confirm what’s available and take your order.</p></article>
-          <article><span>03</span><div class="step-icon">✓</div><h3>Collect your treasure</h3><p>Take ready-made items now. For a caricature, watch the board for your order number.</p></article>
+          <article><span>02</span><div class="step-icon">⌖</div><h3>Place your order</h3><p>Open “My picks,” submit your official order, and save the private tracking code. No payment yet.</p></article>
+          <article><span>03</span><div class="step-icon">✓</div><h3>Track, hear, collect</h3><p>Watch the progress online. When we call your order number, collect it and pay at the stall.</p></article>
         </div>
       </section>
 
@@ -168,12 +168,38 @@
       <div class="drawer-head"><div><p class="eyebrow">Your evidence bag</p><h2 id="drawerTitle">My picks</h2></div><button class="icon-button" id="closeDrawer" type="button" aria-label="Close">×</button></div>
       <div class="drawer-items" id="drawerItems"></div>
       <div class="drawer-foot">
-        <p><b>No payment needed here.</b> Show this list to us at the stall and we’ll create your order.</p>
-        <button class="button button-orange full" id="showAtStallBtn" type="button">I'm ready—show at stall <span>→</span></button>
+        <p><b>Order now, pay at pickup.</b> Submit your picks, then follow the private tracking code until we call your order number.</p>
+        <button class="button button-orange full" id="showAtStallBtn" type="button">Make this an official order <span>→</span></button>
       </div>
     </aside>
     <div class="scrim" id="scrim" hidden></div>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <div class="customer-order-overlay" id="customerOrderOverlay" hidden>
+      <section class="customer-order-card" role="dialog" aria-modal="true" aria-labelledby="customerOrderTitle">
+        <button class="icon-button" id="closeCustomerOrder" type="button" aria-label="Close">×</button>
+        <div id="customerOrderEntry">
+          <p class="eyebrow">Turn picks into an order</p>
+          <h2 id="customerOrderTitle">Make it<br /><em>official.</em></h2>
+          <div class="customer-order-summary" id="customerOrderSummary"></div>
+          <form id="customerOrderForm">
+            <label>Your name<input id="publicCustomerName" name="customer" autocomplete="name" required maxlength="80" placeholder="The name we should call out" /></label>
+            <label>Email <span class="optional" id="publicEmailHint">Optional</span><input id="publicCustomerEmail" name="email" type="email" autocomplete="email" maxlength="180" placeholder="For your ready notification" /></label>
+            <label>Notes <span class="optional">Optional</span><textarea name="notes" rows="3" maxlength="1000" placeholder="Caricature details, colors, or another request…"></textarea></label>
+            <p class="pay-later-note"><b>No payment now.</b> Pay when you collect your finished order.</p>
+            <button class="button button-orange full" type="submit">Place official order <span>→</span></button>
+          </form>
+        </div>
+        <div class="customer-order-success" id="customerOrderSuccess" hidden>
+          <p class="eyebrow">Order received</p>
+          <span>Listen for</span>
+          <strong id="customerOrderNumber">#000</strong>
+          <h2>You're in<br /><em>the queue!</em></h2>
+          <p>Keep your private tracking code. We’ll update your progress, and we’ll call this order number when it’s ready.</p>
+          <button class="copy-code customer-code" id="customerOrderCode" type="button"></button>
+          <button class="button button-orange full" id="customerTrackBtn" type="button">Track my order <span>→</span></button>
+        </div>
+      </section>
+    </div>
     <div class="tracking-overlay" id="trackingOverlay" hidden>
       <section class="tracking-card" role="dialog" aria-modal="true" aria-labelledby="trackingTitle">
         <button class="icon-button" id="closeTracking" type="button" aria-label="Close">×</button>
