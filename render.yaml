@@ -21,6 +21,8 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
+      - key: ADMIN_EMAILS
+        sync: false
       - key: SESSION_SECRET
         generateValue: true
       - key: PUBLIC_URL

@@ -37,7 +37,7 @@ const productVisual = (product, compact=false) => product.image
   : `<span class="paper-art ${compact?'paper-art-small':''}" aria-hidden="true"><b>${product.mark}</b><small>${product.category==='crochet'?'HANDMADE YARN':'HANDMADE'}</small></span>`;
 
 async function api(path,options={}) {
-  const headers={ 'Content-Type':'application/json',...(options.staff?{'X-Staff-Pin':state.staffPin}:{}),...(options.headers||{}) };
+  const headers={ 'Content-Type':'application/json',...(options.staff&&state.staffPin?{'X-Staff-Pin':state.staffPin}:{}),...(options.headers||{}) };
   const response=await fetch(`/api${path}`,{ ...options,headers });
   const data=response.status===204?null:await response.json().catch(()=>({ error:'The server returned an unreadable response.' }));
   if(!response.ok) { const error=new Error(data?.error || 'Request failed.'); error.status=response.status; throw error; }
@@ -110,14 +110,19 @@ function renderOrders() {
 }
 function escapeHtml(value) { const d=document.createElement('div'); d.textContent=value; return d.innerHTML; }
 async function showStaff() {
-  if(!state.staffPin) state.staffPin=prompt('Enter the staff PIN:')?.trim() || '';
-  if(!state.staffPin) return;
+  const signedInAdmin=Boolean(state.user?.isAdmin);
+  if(!signedInAdmin&&!state.staffPin) state.staffPin=prompt('Sign in with an admin Google account, or enter the staff PIN:')?.trim() || '';
+  if(!signedInAdmin&&!state.staffPin) return;
   try { await loadOrders();state.backendAvailable=true; }
   catch(error) {
-    if(error.status===401){ state.staffPin='';sessionStorage.removeItem('sketchy-staff-pin');toast(error.message);return; }
+    if(error.status===401){
+      if(signedInAdmin) { state.user=null;renderAccount();toast('Your admin session expired. Sign in again.'); }
+      else { state.staffPin='';sessionStorage.removeItem('sketchy-staff-pin');toast(error.message); }
+      return;
+    }
     state.backendAvailable=false;renderOrders();toast('Backend not deployed yet — using this device only');
   }
-  sessionStorage.setItem('sketchy-staff-pin',state.staffPin);
+  if(state.staffPin)sessionStorage.setItem('sketchy-staff-pin',state.staffPin);
   closeDrawer(); $('#storeView').hidden=true; $('footer').hidden=true; $('#staffView').hidden=false; $('.site-header').hidden=true; $('#caseNav').hidden=true; $('#trackingFab').hidden=true; $('#mobileDock').hidden=true; window.scrollTo(0,0); updateClock();
   clearInterval(staffRefreshTimer);if(state.backendAvailable)staffRefreshTimer=setInterval(()=>loadOrders().catch(()=>{}),15000);
 }
@@ -158,6 +163,8 @@ function renderAccount() {
   $('#accountName').textContent=state.user.name;
   $('#accountEmail').textContent=state.user.email;
   $('#accountAvatar').src=state.user.picture||'assets/logo.png';
+  $('#accountSignedIn .account-person').classList.toggle('is-admin',Boolean(state.user.isAdmin));
+  $('#accountAdminBtn').hidden=!state.user.isAdmin;
 }
 async function loadMyOrders() {
   const box=$('#accountOrders');
@@ -188,7 +195,7 @@ async function setupGoogleSignIn() {
       try { const session=await api('/auth/google',{method:'POST',body:JSON.stringify({credential:response.credential})});state.user=session.user;renderAccount();loadMyOrders();toast(`Signed in as ${state.user.name}`); }
       catch(error) { toast(error.message); }
     }});
-    google.accounts.id.renderButton($('#googleSignInButton'),{theme:'outline',size:'large',shape:'pill',width:Math.min(360,window.innerWidth-72)});
+    google.accounts.id.renderButton($('#googleSignInButton'),{theme:'filled_black',size:'large',shape:'rectangular',text:'signin_with',logo_alignment:'left',width:Math.min(360,window.innerWidth-72)});
     $('#googleSignInNote').textContent='We only use your name and email to match your fair orders.';
   } catch(error) { $('#googleSignInNote').textContent='Sign-in is temporarily unavailable. Tracking codes still work.'; }
 }
@@ -379,6 +386,7 @@ $('#orderForm').addEventListener('submit', async e => {
 $('#caseButton').addEventListener('click',openDrawer); $('#bottomPicksBtn').addEventListener('click',openDrawer); $('#closeDrawer').addEventListener('click',closeDrawer); $('#scrim').addEventListener('click',closeDrawer);
 $('#mobilePicksBtn').addEventListener('click',openDrawer); $('#mobileTrackBtn').addEventListener('click',()=>openTracking());
 $('#mobileAccountBtn').addEventListener('click',openAccount);$('#accountNavBtn').addEventListener('click',openAccount);$('#closeAccount').addEventListener('click',closeAccount);$('#accountOverlay').addEventListener('click',e=>{if(e.target===$('#accountOverlay'))closeAccount();});$('#accountLogout').addEventListener('click',signOut);
+$('#accountAdminBtn').addEventListener('click',()=>{ closeAccount();showStaff(); });
 $('#staffNavBtn').addEventListener('click',showStaff); $('#backStoreBtn').addEventListener('click',showStore);
 $('#trackNavBtn').addEventListener('click',()=>openTracking()); $('#trackingFab').addEventListener('click',()=>openTracking()); $('#closeTracking').addEventListener('click',closeTracking); $('#trackingOverlay').addEventListener('click',e=>{if(e.target===$('#trackingOverlay'))closeTracking();});
 $('#trackingForm').addEventListener('submit',e=>{e.preventDefault();lookupOrder(new FormData(e.currentTarget).get('trackingCode'));});

@@ -16,6 +16,11 @@ const pool = process.env.DATABASE_URL ? new Pool({ connectionString:process.env.
 const requestWindows = new Map();
 const googleClientId = cleanEnv(process.env.GOOGLE_CLIENT_ID);
 const sessionSecret = cleanEnv(process.env.SESSION_SECRET);
+const adminEmails = new Set([
+  'dechu.avengers@gmail.com',
+  'anika.dechu@gmail.com',
+  ...cleanEnv(process.env.ADMIN_EMAILS).split(',').map(email=>email.trim().toLowerCase()).filter(Boolean)
+]);
 const googleAuth = new OAuth2Client();
 
 app.disable('x-powered-by');
@@ -31,13 +36,16 @@ const rowToOrder = row => ({
   createdAt:row.created_at, updatedAt:row.updated_at
 });
 
-function isStaff(req) {
+function isAdmin(user) { return Boolean(user?.email && adminEmails.has(String(user.email).toLowerCase())); }
+function publicUser(user) { return { email:user.email,name:user.name,picture:user.picture||'',isAdmin:isAdmin(user) }; }
+function hasStaffPin(req) {
   const supplied=Buffer.from(String(req.get('x-staff-pin') || ''));
   const expected=Buffer.from(String(process.env.STAFF_PIN || ''));
   return expected.length>=4 && supplied.length===expected.length && crypto.timingSafeEqual(supplied,expected);
 }
+function isStaff(req) { return isAdmin(readSession(req)) || hasStaffPin(req); }
 function requireStaff(req,res,next) {
-  if (!isStaff(req)) return res.status(401).json({ error:'Staff PIN is incorrect.' });
+  if (!isStaff(req)) return res.status(401).json({ error:'Sign in with an admin account or enter the staff PIN.' });
   next();
 }
 function requireDatabase(res) {
@@ -107,12 +115,12 @@ app.get('/api/health', async (_req,res) => {
 });
 
 app.get('/api/config',(_req,res)=>res.json({ googleClientId:googleClientId&&sessionSecret.length>=24?googleClientId:'' }));
-app.get('/api/auth/me',(req,res)=>{ const user=readSession(req);if(!user)return res.status(401).json({error:'Not signed in.'});res.json({user}); });
+app.get('/api/auth/me',(req,res)=>{ const user=readSession(req);if(!user)return res.status(401).json({error:'Not signed in.'});res.json({user:publicUser(user)}); });
 app.post('/api/auth/google',limitAuth,async(req,res)=>{
   const origin=req.get('origin'),expected=`${req.protocol}://${req.get('host')}`;
   const publicOrigin=cleanEnv(process.env.PUBLIC_URL).replace(/\/$/,'');
   if(origin&&origin!==expected&&origin!==publicOrigin)return res.status(403).json({error:'This sign-in request came from an unexpected site.'});
-  try { const user=await verifyGoogleCredential(clean(req.body.credential,5000));res.setHeader('Set-Cookie',sessionCookie(createSession(user)));res.json({user}); }
+  try { const user=await verifyGoogleCredential(clean(req.body.credential,5000));res.setHeader('Set-Cookie',sessionCookie(createSession(user)));res.json({user:publicUser(user)}); }
   catch(error) { res.status(401).json({error:error.message}); }
 });
 app.post('/api/auth/logout',(_req,res)=>{ res.setHeader('Set-Cookie',sessionCookie('',0));res.status(204).end(); });

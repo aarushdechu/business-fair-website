@@ -193,11 +193,14 @@
         <h2 id="accountTitle">Sign in on<br /><em>this phone.</em></h2>
         <div id="accountSignedOut">
           <p>Google sign-in is optional. It can show orders connected to your email without making you type a tracking code.</p>
-          <div id="googleSignInButton"></div>
+          <div class="google-glitch-shell" data-glitch="SIGN IN WITH GOOGLE">
+            <div id="googleSignInButton"></div>
+          </div>
           <p class="account-note" id="googleSignInNote">Checking sign-in availability…</p>
         </div>
         <div id="accountSignedIn" hidden>
           <div class="account-person"><img id="accountAvatar" alt="" /><div><strong id="accountName"></strong><span id="accountEmail"></span></div></div>
+          <button class="button-49 account-admin-button" id="accountAdminBtn" data-glitch="OPEN ORDER BOARD" type="button" hidden>Open order board <span>↗</span></button>
           <div class="account-orders" id="accountOrders"></div>
           <button class="button-55 account-logout" id="accountLogout" type="button">Sign out</button>
         </div>
