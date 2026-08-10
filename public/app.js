@@ -28,6 +28,7 @@ let filmTimer;
 let projectTaps=0;
 let logoTaps=0;
 let lastCustomerOrderNumber='';
+let mobileMenuTimer;
 
 const $ = (selector, root=document) => root.querySelector(selector);
 const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
@@ -102,6 +103,34 @@ function closeCustomerOrder() { $('#customerOrderOverlay').hidden=true;document.
 let toastTimer;
 function toast(message) { const el=$('#toast'); el.textContent=message; el.classList.add('show'); clearTimeout(toastTimer); toastTimer=setTimeout(()=>el.classList.remove('show'),2200); }
 
+function openMobileMenu() {
+  clearTimeout(mobileMenuTimer);
+  $('#mobileMenu').hidden=false;
+  $('#mobileMenuToggle').setAttribute('aria-expanded','true');
+  $('#mobileMenuToggle').setAttribute('aria-label','Close menu');
+  document.body.classList.add('mobile-menu-open');
+  requestAnimationFrame(()=>$('#mobileMenu').classList.add('is-open'));
+}
+function closeMobileMenu(immediate=false) {
+  clearTimeout(mobileMenuTimer);
+  const menu=$('#mobileMenu');
+  menu.classList.remove('is-open');
+  $('#mobileMenuToggle').setAttribute('aria-expanded','false');
+  $('#mobileMenuToggle').setAttribute('aria-label','Open menu');
+  document.body.classList.remove('mobile-menu-open');
+  if(immediate)menu.hidden=true;
+  else mobileMenuTimer=setTimeout(()=>{if(!menu.classList.contains('is-open'))menu.hidden=true;},520);
+}
+function toggleMobileMenu() { $('#mobileMenu').classList.contains('is-open')?closeMobileMenu():openMobileMenu(); }
+
+function applyRoleUI() {
+  const admin=Boolean(state.user?.isAdmin);
+  document.body.classList.toggle('admin-mode',admin);
+  $('#mobileAdminBtn').hidden=!admin;
+  if(admin&&$('#caseDrawer').classList.contains('open'))closeDrawer();
+  if(admin&&!$('#trackingOverlay').hidden)closeTracking();
+}
+
 function renderStaffProducts() {
   $('#staffProducts').innerHTML = products.map(p => `<label class="staff-product"><input type="checkbox" name="items" value="${p.id}" />${p.name}</label>`).join('');
 }
@@ -138,10 +167,10 @@ async function showStaff() {
     state.backendAvailable=false;renderOrders();toast('Backend not deployed yet — using this device only');
   }
   if(state.staffPin)sessionStorage.setItem('sketchy-staff-pin',state.staffPin);
-  closeDrawer(); $('#storeView').hidden=true; $('footer').hidden=true; $('#staffView').hidden=false; $('.site-header').hidden=true; $('#caseNav').hidden=true; $('#trackingFab').hidden=true; $('#mobileDock').hidden=true; window.scrollTo(0,0); updateClock();
+  closeDrawer();closeMobileMenu(true); $('#storeView').hidden=true; $('footer').hidden=true; $('#staffView').hidden=false; $('.site-header').hidden=true; $('#caseNav').hidden=true; $('#trackingFab').hidden=true; window.scrollTo(0,0); updateClock();
   clearInterval(staffRefreshTimer);if(state.backendAvailable)staffRefreshTimer=setInterval(()=>loadOrders().catch(()=>{}),15000);
 }
-function showStore() { clearInterval(staffRefreshTimer);$('#storeView').hidden=false; $('footer').hidden=false; $('#staffView').hidden=true; $('.site-header').hidden=false; $('#caseNav').hidden=false; $('#trackingFab').hidden=false; $('#mobileDock').hidden=false; window.scrollTo(0,0); }
+function showStore() { clearInterval(staffRefreshTimer);$('#storeView').hidden=false; $('footer').hidden=false; $('#staffView').hidden=true; $('.site-header').hidden=false; $('#caseNav').hidden=false; $('#trackingFab').hidden=false;applyRoleUI();window.scrollTo(0,0); }
 function updateClock() { const el=$('#staffClock'); if(el) el.textContent=new Date().toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}); }
 
 function openTracking(orderNumber='') {
@@ -170,6 +199,7 @@ function openAccount() {
 function closeAccount() { $('#accountOverlay').hidden=true;document.body.style.overflow=''; }
 function renderAccount() {
   const signedIn=Boolean(state.user);
+  applyRoleUI();
   $('#accountSignedOut').hidden=signedIn;
   $('#accountSignedIn').hidden=!signedIn;
   $('#accountNavBtn').lastChild.textContent=signedIn?'Account':'Sign in';
@@ -371,6 +401,7 @@ function setupScrollExperience() {
 }
 
 document.addEventListener('click', async e => {
+  if(e.target.closest('#mobileMenu [data-jump]'))closeMobileMenu();
   const storyJump=e.target.closest('[data-story-jump]'); if(storyJump){ const story=$('.product-story'),distance=story.offsetHeight-window.innerHeight,progress=Number(storyJump.dataset.storyJump)/(products.length-1); window.scrollTo({top:story.offsetTop+distance*progress,behavior:'smooth'}); }
   const surprise=e.target.closest('[data-product-surprise]'); if(surprise){ const product=productById(surprise.dataset.productSurprise);surprise.classList.remove('is-booping');void surprise.offsetWidth;surprise.classList.add('is-booping');toast(`${product.name}: ${['highly suspicious craftsmanship.','definitely handmade evidence.','tiny object, huge personality.'][Math.floor(Math.random()*3)]}`); }
   const jump=e.target.closest('[data-jump]'); if(jump){ e.preventDefault();$(jump.dataset.jump)?.scrollIntoView({behavior:'smooth'}); }
@@ -415,8 +446,10 @@ $('#customerOrderForm').addEventListener('submit',async e=>{
   } catch(error){toast(error.message);} finally {submit.disabled=false;}
 });
 $('#caseButton').addEventListener('click',openDrawer); $('#bottomPicksBtn').addEventListener('click',openDrawer); $('#closeDrawer').addEventListener('click',closeDrawer); $('#scrim').addEventListener('click',closeDrawer);
-$('#mobilePicksBtn').addEventListener('click',openDrawer); $('#mobileTrackBtn').addEventListener('click',()=>openTracking());
-$('#mobileAccountBtn').addEventListener('click',openAccount);$('#accountNavBtn').addEventListener('click',openAccount);$('#closeAccount').addEventListener('click',closeAccount);$('#accountOverlay').addEventListener('click',e=>{if(e.target===$('#accountOverlay'))closeAccount();});$('#accountLogout').addEventListener('click',signOut);
+$('#mobileMenuToggle').addEventListener('click',toggleMobileMenu);
+$('#mobilePicksBtn').addEventListener('click',()=>{closeMobileMenu();openDrawer();}); $('#mobileTrackBtn').addEventListener('click',()=>{closeMobileMenu();openTracking();});
+$('#mobileAccountBtn').addEventListener('click',()=>{closeMobileMenu();openAccount();});$('#accountNavBtn').addEventListener('click',openAccount);$('#closeAccount').addEventListener('click',closeAccount);$('#accountOverlay').addEventListener('click',e=>{if(e.target===$('#accountOverlay'))closeAccount();});$('#accountLogout').addEventListener('click',signOut);
+$('#mobileAdminBtn').addEventListener('click',()=>{closeMobileMenu(true);showStaff();});
 $('#accountAdminBtn').addEventListener('click',()=>{ closeAccount();showStaff(); });
 $('#staffNavBtn').addEventListener('click',showStaff); $('#backStoreBtn').addEventListener('click',showStore);
 $('#trackNavBtn').addEventListener('click',()=>openTracking()); $('#trackingFab').addEventListener('click',()=>openTracking()); $('#closeTracking').addEventListener('click',closeTracking); $('#trackingOverlay').addEventListener('click',e=>{if(e.target===$('#trackingOverlay'))closeTracking();});
@@ -427,7 +460,7 @@ $('#skipFilm').addEventListener('click',finishOpeningFilm);
 $('#projectStamp').addEventListener('click',()=>{ const messages=['Summer project classified.','Built with paper, yarn, ink, and snacks.','Two young makers. Zero boring products.','Secret unlocked: creativity is the whole operation.'];toast(messages[projectTaps%messages.length]);projectTaps+=1;if(projectTaps%4===0)burstConfetti(); });
 $('.brand').addEventListener('click',()=>{logoTaps+=1;if(logoTaps===3){toast('Logo tapped 3× — extremely sketchy behavior.');burstConfetti();logoTaps=0;} });
 $('#clearDoneBtn').addEventListener('click',async()=>{ const count=state.orders.filter(o=>o.status==='picked-up').length; if(count && confirm(`Clear ${count} picked-up order${count===1?'':'s'}?`)){ try { if(state.backendAvailable)await api('/orders/picked-up',{method:'DELETE',staff:true});state.orders=state.orders.filter(o=>o.status!=='picked-up');save();renderOrders(); } catch(error){toast(error.message);} } });
-document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeDrawer();closeTracking();closeCustomerOrder();closeAccount();finishOpeningFilm(); } });
+document.addEventListener('keydown',e=>{ if(e.key==='Escape') { closeMobileMenu();closeDrawer();closeTracking();closeCustomerOrder();closeAccount();finishOpeningFilm(); } });
 setInterval(updateClock,30000);
 renderProductStory(); renderDrawer(); syncPickButtons(); renderStaffProducts(); renderOrders(); updateClock();
 setupOpeningFilm();

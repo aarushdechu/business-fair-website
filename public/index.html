@@ -42,7 +42,7 @@
       <button data-jump="#case-files" type="button"><span>Goods</span></button>
       <button data-jump="#how-it-works" type="button"><span>How it works</span></button>
     </nav>
-    <button class="tracking-fab button-49" id="trackingFab" type="button" data-glitch="TRACK MY ORDER">Track my order <span>◎</span></button>
+    <button class="tracking-fab button-49 customer-only" id="trackingFab" type="button" data-glitch="TRACK MY ORDER">Track my order <span>◎</span></button>
     <header class="site-header">
       <a class="brand" href="#top" aria-label="A Sketchy Business home">
         <span class="brand-mark"><img src="assets/logo.png" alt="" /></span>
@@ -52,22 +52,33 @@
         <a href="#case-files"><span>01</span>The goods</a>
         <a href="#project"><span>02</span>The project</a>
         <a href="#how-it-works"><span>03</span>How it works</a>
-        <button class="nav-track" id="trackNavBtn" type="button"><span>04</span>Track order</button>
+        <button class="nav-track customer-only" id="trackNavBtn" type="button"><span>04</span>Track order</button>
         <button class="nav-account" id="accountNavBtn" type="button"><span>05</span>Sign in</button>
         <button class="nav-staff" id="staffNavBtn" type="button" aria-label="Open staff board">⌘</button>
       </nav>
-      <button class="case-button button-86" id="caseButton" type="button" aria-label="Open your picks">
+      <button class="case-button button-86 customer-only" id="caseButton" type="button" aria-label="Open your picks">
         <span class="case-label">My picks</span><span class="case-count" id="caseCount" data-count="0">0</span>
+      </button>
+      <button class="mobile-menu-toggle" id="mobileMenuToggle" type="button" aria-expanded="false" aria-controls="mobileMenu" aria-label="Open menu">
+        <span></span><span></span><span></span>
       </button>
     </header>
 
-    <nav class="mobile-dock" id="mobileDock" aria-label="Mobile navigation">
-      <button data-jump="#top" type="button"><span>⌂</span>Home</button>
-      <button data-jump="#case-files" type="button"><span>✦</span>Shop</button>
-      <button id="mobileTrackBtn" type="button"><span>◎</span>Track</button>
-      <button id="mobilePicksBtn" type="button"><span>＋</span>Picks <b id="mobilePickCount">0</b></button>
-      <button id="mobileAccountBtn" type="button"><span>●</span>Me</button>
-    </nav>
+    <div class="mobile-menu" id="mobileMenu" hidden>
+      <div class="mobile-menu-panel">
+        <p class="mobile-menu-kicker">A Sketchy Business · Case navigation</p>
+        <nav aria-label="Mobile navigation">
+          <button data-jump="#case-files" data-menu-label="THE GOODS" type="button"><small>01</small><span>The goods</span><b>↘</b></button>
+          <button data-jump="#project" data-menu-label="THE PROJECT" type="button"><small>02</small><span>The project</span><b>↘</b></button>
+          <button data-jump="#how-it-works" data-menu-label="HOW IT WORKS" type="button"><small>03</small><span>How it works</span><b>↘</b></button>
+          <button class="customer-only" id="mobileTrackBtn" data-menu-label="TRACK ORDER" type="button"><small>04</small><span>Track order</span><b>◎</b></button>
+          <button class="customer-only" id="mobilePicksBtn" data-menu-label="MY PICKS" type="button"><small>05</small><span>My picks</span><em id="mobilePickCount">0</em></button>
+          <button id="mobileAccountBtn" data-menu-label="ACCOUNT" type="button"><small>06</small><span>Account</span><b>●</b></button>
+          <button id="mobileAdminBtn" data-menu-label="ORDER BOARD" type="button" hidden><small>07</small><span>Order board</span><b>↗</b></button>
+        </nav>
+        <p class="mobile-menu-note">Made by kids · made by hand · definitely sketchy</p>
+      </div>
+    </div>
 
     <main id="storeView">
       <section class="hero" id="top">
@@ -115,7 +126,7 @@
           <p class="eyebrow">The main suspect</p>
           <h2>You, but <em>funnier.</em></h2>
           <p>We take a quick photo at the stall, use it to draw your black-and-white caricature, and delete it afterward—with proof if you want it. One person is $12. Two people are $17.</p>
-          <button class="button button-orange quick-add" data-product="caricature" type="button">Add a caricature to my picks <span>＋</span></button>
+          <button class="button button-orange quick-add customer-only" data-product="caricature" type="button">Add a caricature to my picks <span>＋</span></button>
         </div>
         <div class="feature-stamp">Drawn<br />on site!</div>
       </section>
@@ -134,7 +145,7 @@
       <section class="final-cta">
         <img src="assets/logo.png" alt="A Sketchy Business" />
         <div><p class="eyebrow">Mystery solved</p><h2>Found something<br /><em>you like?</em></h2><p>Save it to your picks and come find us at the fair.</p></div>
-        <button class="button button-orange" id="bottomPicksBtn" type="button">See my picks <span>→</span></button>
+        <button class="button button-orange customer-only" id="bottomPicksBtn" type="button">See my picks <span>→</span></button>
       </section>
     </main>
 
