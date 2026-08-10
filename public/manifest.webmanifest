@@ -9,6 +9,6 @@
   "theme_color": "#181816",
   "orientation": "portrait-primary",
   "icons": [
-    { "src": "/assets/logo.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any maskable" }
+    { "src": "/assets/logo-mark.png", "sizes": "1254x1254", "type": "image/png", "purpose": "any maskable" }
   ]
 }

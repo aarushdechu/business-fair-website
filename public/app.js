@@ -207,7 +207,7 @@ function renderAccount() {
   if(!signedIn)return;
   $('#accountName').textContent=state.user.name;
   $('#accountEmail').textContent=state.user.email;
-  $('#accountAvatar').src=state.user.picture||'assets/logo.png';
+  $('#accountAvatar').src=state.user.picture||'assets/logo-mark.png';
   $('#accountSignedIn .account-person').classList.toggle('is-admin',Boolean(state.user.isAdmin));
   $('#accountAdminBtn').hidden=!state.user.isAdmin;
   $('#accountOrders').hidden=Boolean(state.user.isAdmin);

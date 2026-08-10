@@ -394,3 +394,6 @@ body.admin-mode .story-add { display:none!important; }
   .mobile-menu::before { transition-duration:.01ms; }
   .mobile-menu nav button::after { animation:none!important; }
 }
+
+/* The dedicated detective mark no longer needs the old full-logo crop. */
+.brand-mark img { inset:0!important;width:100%!important;height:100%!important;object-fit:contain;padding:2px; }
