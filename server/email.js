@@ -7,6 +7,7 @@ import {
 import { escapeHtml } from './utils.js';
 
 let emailVerification;
+let emailVerificationExpires=0;
 
 function relayError(message, code = 'relay-failed') {
   const error=new Error(message);
@@ -48,9 +49,12 @@ export function describeEmailError(error) {
 
 export async function getEmailDiagnostics() {
   if(!emailProvider)return { configured:false,ready:false,provider:null,problem:'Email relay settings are missing.' };
-  emailVerification ||= callEmailRelay({ action:'health' })
-    .then(result=>({ configured:true,ready:true,provider:emailProvider,problem:null,quota:result.quota }))
-    .catch(error=>({ configured:true,ready:false,provider:emailProvider,problem:describeEmailError(error),code:error.emailCode || 'unknown' }));
+  if(!emailVerification || Date.now() >= emailVerificationExpires){
+    emailVerificationExpires=Date.now() + 60_000;
+    emailVerification=callEmailRelay({ action:'health' })
+      .then(result=>({ configured:true,ready:true,provider:emailProvider,problem:null,quota:result.quota }))
+      .catch(error=>({ configured:true,ready:false,provider:emailProvider,problem:describeEmailError(error),code:error.emailCode || 'unknown' }));
+  }
   return emailVerification;
 }
 
