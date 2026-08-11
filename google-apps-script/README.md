@@ -9,12 +9,13 @@ This small private relay lets the Render server send ready notifications through
 3. Open **Project Settings** > **Script properties** and add:
    - Property: `WEBHOOK_SECRET`
    - Value: a unique random string at least 32 characters long
-4. Click **Deploy** > **New deployment** > **Web app**.
-5. Set **Execute as** to `Me` and **Who has access** to `Anyone`.
-6. Click **Deploy**, approve the MailApp permission, and copy the URL ending in `/exec`.
-7. In the Render web service, add:
+4. In the function menu above the editor, select `authorizeEmail`, click **Run**, and approve the MailApp permission. For this private script owned by your account, use **Advanced** > **Go to A Sketchy Business Email (unsafe)** on Google's unverified-app screen, then click **Allow**.
+5. Click **Deploy** > **New deployment** > **Web app**.
+6. Set **Execute as** to `Me` and **Who has access** to `Anyone`.
+7. Click **Deploy** and copy the URL ending in `/exec`.
+8. In the Render web service, add:
    - `GOOGLE_EMAIL_WEB_APP_URL`: the `/exec` deployment URL
    - `GOOGLE_EMAIL_WEB_APP_SECRET`: exactly the same value as `WEBHOOK_SECRET`
-8. Save and deploy the Render service. `/api/health` should then report `emailProvider: "google-apps-script"` and `emailReady: true`.
+9. Save and deploy the Render service. `/api/health` should then report `emailProvider: "google-apps-script"` and `emailReady: true`.
 
 Never commit or share the webhook secret. If `Code.gs` changes later, create a new Apps Script deployment version for the change to become live.

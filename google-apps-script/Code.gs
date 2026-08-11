@@ -4,6 +4,13 @@ function jsonResponse(payload) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
+// Run this once from the Apps Script editor before deploying the web app.
+function authorizeEmail() {
+  var quota=MailApp.getRemainingDailyQuota();
+  console.log('Email permission granted. Remaining daily quota: ' + quota);
+  return quota;
+}
+
 function doPost(event) {
   try {
     var payload=JSON.parse((event.postData && event.postData.contents) || '{}');
