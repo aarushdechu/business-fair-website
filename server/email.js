@@ -41,6 +41,8 @@ export function describeEmailError(error) {
   if(error?.emailCode==='quota-exhausted')return 'The Gmail daily sending limit has been reached.';
   if(error?.emailCode==='invalid-recipient')return 'Google rejected the customer email address.';
   if(error?.emailCode==='connection-failed')return 'The server could not reach the Google email relay.';
+  if(error?.emailCode==='invalid-response')return 'The Google email relay URL is not publicly accessible.';
+  if(error?.emailCode==='send-failed')return 'The Google email relay needs permission to send email.';
   return 'Google could not send the message.';
 }
 
@@ -48,7 +50,7 @@ export async function getEmailDiagnostics() {
   if(!emailProvider)return { configured:false,ready:false,provider:null,problem:'Email relay settings are missing.' };
   emailVerification ||= callEmailRelay({ action:'health' })
     .then(result=>({ configured:true,ready:true,provider:emailProvider,problem:null,quota:result.quota }))
-    .catch(error=>({ configured:true,ready:false,provider:emailProvider,problem:describeEmailError(error) }));
+    .catch(error=>({ configured:true,ready:false,provider:emailProvider,problem:describeEmailError(error),code:error.emailCode || 'unknown' }));
   return emailVerification;
 }
 

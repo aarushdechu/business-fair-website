@@ -60,6 +60,7 @@ export function registerOrderRoutes(app, limits) {
         emailProvider:emailProvider || null,
         emailReady:emailStatus.ready,
         emailProblem:emailStatus.problem,
+        emailDiagnosticCode:emailStatus.code ?? null,
         emailQuota:emailStatus.quota ?? null
       });
     } catch {
