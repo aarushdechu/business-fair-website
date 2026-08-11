@@ -9,19 +9,11 @@ export const googleClientId = cleanEnv(process.env.GOOGLE_CLIENT_ID);
 export const sessionSecret = cleanEnv(process.env.SESSION_SECRET);
 export const staffPin = cleanEnv(process.env.STAFF_PIN);
 export const publicUrl = cleanEnv(process.env.RENDER_EXTERNAL_URL || process.env.PUBLIC_URL).replace(/\/$/, '');
-export const resendApiKey = cleanEnv(process.env.RESEND_API_KEY);
-export const emailFrom = cleanEnv(process.env.EMAIL_FROM);
-export const gmailUser = cleanEnv(process.env.GMAIL_USER).toLowerCase();
-export const gmailAppPassword = cleanEnv(process.env.GMAIL_APP_PASSWORD).replace(/\s/g, '');
-export const brevoApiKey = cleanEnv(process.env.BREVO_API_KEY);
-export const brevoSenderEmail = cleanEnv(process.env.BREVO_SENDER_EMAIL || process.env.GMAIL_USER).toLowerCase();
-export const emailProvider = brevoApiKey && brevoSenderEmail
-  ? 'brevo'
-  : gmailUser && gmailAppPassword
-    ? 'gmail'
-    : resendApiKey && emailFrom
-      ? 'resend'
-      : '';
+export const googleEmailWebAppUrl = cleanEnv(process.env.GOOGLE_EMAIL_WEB_APP_URL);
+export const googleEmailWebAppSecret = cleanEnv(process.env.GOOGLE_EMAIL_WEB_APP_SECRET);
+export const emailProvider = googleEmailWebAppUrl && googleEmailWebAppSecret
+  ? 'google-apps-script'
+  : '';
 
 export const adminEmails = new Set([
   'dechu.avengers@gmail.com',

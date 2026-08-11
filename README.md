@@ -20,6 +20,7 @@ business-fair-website/
 │   ├── orders.js        Order and tracking API routes
 │   └── utils.js         Shared helper functions
 ├── server.js            Starts the backend
+├── google-apps-script/  Gmail HTTPS relay and setup guide
 ├── .env.example         Safe template for local settings
 ├── package.json         Node dependencies and commands
 └── render.yaml          Render deployment settings
@@ -43,10 +44,8 @@ Run `npm run check` after changing JavaScript to check all server and browser fi
 The included `render.yaml` creates a Node web service and PostgreSQL database. Create a new Render Blueprint from this repository, then provide:
 
 - `STAFF_PIN`: the private PIN used to open the staff board.
-- `BREVO_API_KEY`: enables ready notifications over Brevo's HTTPS API.
-- `BREVO_SENDER_EMAIL`: the Gmail address verified as a sender in Brevo.
-- `GMAIL_USER` and `GMAIL_APP_PASSWORD`: SMTP fallback for paid Render instances only.
-- `RESEND_API_KEY` and `EMAIL_FROM`: optional alternative if you later use Resend with a verified domain.
+- `GOOGLE_EMAIL_WEB_APP_URL`: deployed Google Apps Script URL ending in `/exec`.
+- `GOOGLE_EMAIL_WEB_APP_SECRET`: private secret shared only by Render and the script.
 - `GOOGLE_CLIENT_ID`: optional; enables Google sign-in for customers.
 - `SESSION_SECRET`: a long random secret used to sign login cookies. The Render Blueprint generates this automatically.
 
@@ -66,12 +65,6 @@ The web app includes a manifest and service worker, so it can be installed from 
 
 ## Email setup
 
-For the simplest setup without a custom domain on Render's free plan:
+Use the Google Apps Script relay in [`google-apps-script/`](google-apps-script/). It sends through Gmail over HTTPS, so it works on Render's free plan without a domain or third-party email account. Follow that folder's setup guide, then check `/api/health` for `"emailProvider":"google-apps-script"` and `"emailReady":true`.
 
-1. Create a Brevo account.
-2. Add the Gmail address as a sender and enter the six-digit verification code Brevo emails to it.
-3. Create a Brevo API key.
-4. Add `BREVO_API_KEY` and `BREVO_SENDER_EMAIL` to the Render web service's environment variables, then redeploy.
-5. Check `/api/health`; it should report `"email":true` and `"emailProvider":"brevo"`.
-
-The API key is a secret: place it only in Render, never in this repository. Free Render services block Gmail's SMTP ports, so Gmail App Passwords work only after upgrading the Render instance. If multiple providers are configured, Brevo is preferred. Ready notifications are sent only for orders containing a personalized caricature when an admin changes the order status to `ready`.
+The shared webhook secret belongs only in Apps Script's Script Properties and Render's environment variables—never in this repository. A regular Gmail account currently supports up to 100 Apps Script email recipients per day. Ready notifications are sent only for orders containing a personalized caricature when an admin changes the order status to `ready`.

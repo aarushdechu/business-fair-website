@@ -1,127 +1,80 @@
-import nodemailer from 'nodemailer';
 import {
-  brevoApiKey,
-  brevoSenderEmail,
-  emailFrom,
   emailProvider,
-  gmailAppPassword,
-  gmailUser,
-  publicUrl,
-  resendApiKey
+  googleEmailWebAppSecret,
+  googleEmailWebAppUrl,
+  publicUrl
 } from './config.js';
 import { escapeHtml } from './utils.js';
 
-let gmailTransporter;
-let gmailVerification;
-let brevoVerification;
+let emailVerification;
 
-function getGmailTransporter() {
-  gmailTransporter ||= nodemailer.createTransport({
-    host:'smtp.gmail.com',
-    port:465,
-    secure:true,
-    family:4,
-    auth:{ user:gmailUser, pass:gmailAppPassword },
-    connectionTimeout:10_000,
-    greetingTimeout:10_000,
-    socketTimeout:15_000
-  });
-  return gmailTransporter;
+function relayError(message, code = 'relay-failed') {
+  const error=new Error(message);
+  error.provider='google-apps-script';
+  error.emailCode=code;
+  return error;
+}
+
+async function callEmailRelay(payload) {
+  let response;
+  try {
+    response=await fetch(googleEmailWebAppUrl,{
+      method:'POST',
+      headers:{ 'Content-Type':'text/plain;charset=utf-8' },
+      body:JSON.stringify({ secret:googleEmailWebAppSecret,...payload }),
+      redirect:'follow',
+      signal:AbortSignal.timeout(15_000)
+    });
+  } catch {
+    throw relayError('Could not connect to the Google email relay.','connection-failed');
+  }
+
+  let result;
+  try { result=JSON.parse(await response.text()); }
+  catch { throw relayError('Google returned an invalid email-relay response.','invalid-response'); }
+  if(!response.ok || !result.ok)throw relayError(result.error || 'Google rejected the email request.',result.code);
+  return result;
 }
 
 export function describeEmailError(error) {
-  if(error?.provider==='brevo' && error?.responseCode===401) return 'Brevo rejected the API key.';
-  if(error?.provider==='brevo' && error?.responseCode===400) return 'Brevo rejected the sender or recipient.';
-  if(error?.provider==='brevo') return 'Brevo could not send the message.';
-  if(error?.code==='EAUTH' || error?.responseCode===535) return 'Gmail rejected the address or App Password.';
-  if(['ECONNECTION','ETIMEDOUT','ESOCKET','EDNS'].includes(error?.code)) return 'The server could not connect to Gmail.';
-  if(error?.responseCode===550) return 'Gmail rejected the recipient address.';
-  return 'Gmail could not send the message.';
+  if(error?.emailCode==='unauthorized')return 'The Google email relay secrets do not match.';
+  if(error?.emailCode==='quota-exhausted')return 'The Gmail daily sending limit has been reached.';
+  if(error?.emailCode==='invalid-recipient')return 'Google rejected the customer email address.';
+  if(error?.emailCode==='connection-failed')return 'The server could not reach the Google email relay.';
+  return 'Google could not send the message.';
 }
 
 export async function getEmailDiagnostics() {
-  if(!emailProvider)return { configured:false,ready:false,provider:null,problem:'Email credentials are missing.' };
-  if(emailProvider==='brevo'){
-    brevoVerification ||= fetch('https://api.brevo.com/v3/account',{
-      headers:{ accept:'application/json','api-key':brevoApiKey },
-      signal:AbortSignal.timeout(10_000)
-    }).then(response=>response.ok
-      ? { configured:true,ready:true,provider:'brevo',problem:null }
-      : { configured:true,ready:false,provider:'brevo',problem:response.status===401?'Brevo rejected the API key.':'Brevo account verification failed.' })
-      .catch(()=>({ configured:true,ready:false,provider:'brevo',problem:'The server could not connect to Brevo.' }));
-    return brevoVerification;
-  }
-  if(emailProvider==='resend')return { configured:true,ready:true,provider:'resend',problem:null };
-  gmailVerification ||= getGmailTransporter().verify()
-    .then(()=>({ configured:true,ready:true,provider:'gmail',problem:null }))
-    .catch(error=>({ configured:true,ready:false,provider:'gmail',problem:describeEmailError(error) }));
-  return gmailVerification;
+  if(!emailProvider)return { configured:false,ready:false,provider:null,problem:'Email relay settings are missing.' };
+  emailVerification ||= callEmailRelay({ action:'health' })
+    .then(result=>({ configured:true,ready:true,provider:emailProvider,problem:null,quota:result.quota }))
+    .catch(error=>({ configured:true,ready:false,provider:emailProvider,problem:describeEmailError(error) }));
+  return emailVerification;
 }
 
 function readyMessage(order, requestOrigin) {
-  const trackingUrl = `${publicUrl || requestOrigin}/?track=${encodeURIComponent(order.number)}`;
+  const trackingUrl=`${publicUrl || requestOrigin}/?track=${encodeURIComponent(order.number)}`;
   return {
     subject:`Order #${order.number}: Your order is ready!`,
+    text:`Hi ${order.customer_name}, your A Sketchy Business order #${order.number} is ready. Track it here: ${trackingUrl}`,
     html:`<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#181816"><h1 style="font-size:30px">Your order is ready!</h1><p>Hi ${escapeHtml(order.customer_name)},</p><p>Your A Sketchy Business order <strong>#${order.number}</strong> is now <strong>ready</strong>.</p><p><a href="${trackingUrl}" style="display:inline-block;background:#ee672d;color:white;padding:13px 18px;text-decoration:none;font-weight:bold">Check your order</a></p><p style="color:#666">Order number: #${order.number}</p></div>`
   };
 }
 
-async function sendWithGmail(order, message) {
-  await getGmailTransporter().sendMail({
-    from:`A Sketchy Business <${gmailUser}>`,
-    to:order.customer_email,
-    ...message
-  });
-}
-
-async function sendWithBrevo(order, message) {
-  const response=await fetch('https://api.brevo.com/v3/smtp/email',{
-    method:'POST',
-    headers:{
-      accept:'application/json',
-      'api-key':brevoApiKey,
-      'content-type':'application/json'
-    },
-    body:JSON.stringify({
-      sender:{ name:'A Sketchy Business',email:brevoSenderEmail },
-      to:[{ email:order.customer_email,name:order.customer_name }],
-      subject:message.subject,
-      htmlContent:message.html
-    })
-  });
-  if(!response.ok){
-    const error=new Error(`Brevo returned ${response.status}`);
-    error.provider='brevo';
-    error.responseCode=response.status;
-    throw error;
-  }
-}
-
-async function sendWithResend(order, message) {
-  const response = await fetch('https://api.resend.com/emails', {
-    method:'POST',
-    headers:{
-      Authorization:`Bearer ${resendApiKey}`,
-      'Content-Type':'application/json',
-      'User-Agent':'a-sketchy-business/1.0',
-      'Idempotency-Key':`${order.id}-${order.status}-${new Date(order.updated_at).getTime()}`
-    },
-    body:JSON.stringify({ from:emailFrom, to:[order.customer_email], ...message })
-  });
-  if (!response.ok) throw new Error(`Email provider returned ${response.status}`);
-}
-
 export async function sendReadyEmail(order, requestOrigin) {
-  if (!order.items?.includes('caricature') || order.status !== 'ready') {
-    return { sent:false, reason:'A ready email is only sent for caricatures.' };
+  if(!order.items?.includes('caricature') || order.status!=='ready'){
+    return { sent:false,reason:'A ready email is only sent for caricatures.' };
   }
-  if (!order.customer_email || !emailProvider) {
-    return { sent:false, reason:'Email is not configured.' };
+  if(!order.customer_email || !emailProvider){
+    return { sent:false,reason:'Email is not configured.' };
   }
 
   const message=readyMessage(order,requestOrigin);
-  if(emailProvider==='brevo')await sendWithBrevo(order,message);
-  else if(emailProvider==='gmail')await sendWithGmail(order,message);
-  else await sendWithResend(order,message);
-  return { sent:true, provider:emailProvider };
+  await callEmailRelay({
+    action:'send',
+    to:order.customer_email,
+    customer:order.customer_name,
+    ...message
+  });
+  return { sent:true,provider:emailProvider };
 }
