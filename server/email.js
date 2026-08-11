@@ -16,6 +16,20 @@ function relayError(message, code = 'relay-failed') {
   return error;
 }
 
+function invalidRelayResponse(response, body) {
+  const normalized=String(body || '').toLowerCase();
+  if(response.url.includes('accounts.google.com') || normalized.includes('sign in with google')){
+    return relayError('The Google email relay requires a Google login.','access-denied');
+  }
+  if(normalized.includes('script function not found') && normalized.includes('dopost')){
+    return relayError('The deployed script does not contain doPost.','missing-do-post');
+  }
+  if(normalized.includes('page not found') || normalized.includes('unable to open the file')){
+    return relayError('The Google email relay URL is invalid.','invalid-url');
+  }
+  return relayError('Google returned an invalid email-relay response.','invalid-response');
+}
+
 async function callEmailRelay(payload) {
   let response;
   try {
@@ -30,9 +44,10 @@ async function callEmailRelay(payload) {
     throw relayError('Could not connect to the Google email relay.','connection-failed');
   }
 
+  const body=await response.text();
   let result;
-  try { result=JSON.parse(await response.text()); }
-  catch { throw relayError('Google returned an invalid email-relay response.','invalid-response'); }
+  try { result=JSON.parse(body); }
+  catch { throw invalidRelayResponse(response,body); }
   if(!response.ok || !result.ok)throw relayError(result.error || 'Google rejected the email request.',result.code);
   return result;
 }
@@ -42,6 +57,9 @@ export function describeEmailError(error) {
   if(error?.emailCode==='quota-exhausted')return 'The Gmail daily sending limit has been reached.';
   if(error?.emailCode==='invalid-recipient')return 'Google rejected the customer email address.';
   if(error?.emailCode==='connection-failed')return 'The server could not reach the Google email relay.';
+  if(error?.emailCode==='access-denied')return 'The Google email relay is not shared with Anyone.';
+  if(error?.emailCode==='missing-do-post')return 'The deployed Apps Script version is missing the email code.';
+  if(error?.emailCode==='invalid-url')return 'The Apps Script deployment URL is incorrect.';
   if(error?.emailCode==='invalid-response')return 'The Google email relay URL is not publicly accessible.';
   if(error?.emailCode==='send-failed')return 'The Google email relay needs permission to send email.';
   return 'Google could not send the message.';
