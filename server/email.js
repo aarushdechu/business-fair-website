@@ -70,7 +70,7 @@ export async function getEmailDiagnostics() {
   if(!emailVerification || Date.now() >= emailVerificationExpires){
     emailVerificationExpires=Date.now() + 60_000;
     emailVerification=callEmailRelay({ action:'health' })
-      .then(result=>({ configured:true,ready:true,provider:emailProvider,problem:null,quota:result.quota }))
+      .then(result=>({ configured:true,ready:true,provider:emailProvider,problem:null,quota:result.quota,version:result.version || null }))
       .catch(error=>({ configured:true,ready:false,provider:emailProvider,problem:describeEmailError(error),code:error.emailCode || 'unknown' }));
   }
   return emailVerification;

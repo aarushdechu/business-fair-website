@@ -13,9 +13,10 @@ This small private relay lets the Render server send ready notifications through
 5. Click **Deploy** > **New deployment** > **Web app**.
 6. Set **Execute as** to `Me` and **Who has access** to `Anyone`.
 7. Click **Deploy** and copy the URL ending in `/exec`.
-8. In the Render web service, add:
+8. Open that `/exec` URL in a private/incognito browser window. The correct public deployment returns JSON containing `"version":"2026-08-12.1"`. If it shows a login, error page, or a different version, fix the Apps Script deployment before continuing.
+9. In the Render web service, add:
    - `GOOGLE_EMAIL_WEB_APP_URL`: the `/exec` deployment URL
    - `GOOGLE_EMAIL_WEB_APP_SECRET`: exactly the same value as `WEBHOOK_SECRET`
-9. Save and deploy the Render service. `/api/health` should then report `emailProvider: "google-apps-script"` and `emailReady: true`.
+10. Save and deploy the Render service. `/api/health` should then report `emailProvider: "google-apps-script"` and `emailReady: true`.
 
 Never commit or share the webhook secret. If `Code.gs` changes later, create a new Apps Script deployment version for the change to become live.

@@ -61,7 +61,8 @@ export function registerOrderRoutes(app, limits) {
         emailReady:emailStatus.ready,
         emailProblem:emailStatus.problem,
         emailDiagnosticCode:emailStatus.code ?? null,
-        emailQuota:emailStatus.quota ?? null
+        emailQuota:emailStatus.quota ?? null,
+        emailRelayVersion:emailStatus.version ?? null
       });
     } catch {
       res.status(503).json({ ok:false, database:false });
