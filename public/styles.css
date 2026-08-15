@@ -77,9 +77,9 @@ h1 em,h2 em { font-family:"Rock Salt",cursive; color:var(--orange); font-weight:
 .button-dark { background:var(--ink); color:white; }
 .button-orange { background:var(--orange); color:white; }
 .text-link { color:inherit; font-weight:800; text-decoration-thickness:2px; text-underline-offset:5px; }
-.button-49,.button-49::after { box-sizing:border-box; width:245px; height:58px; line-height:58px; font-size:14px; font-family:"DM Sans",sans-serif; font-weight:900; background:linear-gradient(45deg,transparent 5%,var(--ink) 5%); border:0; color:var(--white); letter-spacing:.02em; box-shadow:6px 0 0 var(--orange); outline:transparent; position:relative; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
-.button-49 { display:flex; align-items:center; justify-content:space-between; padding:0 20px; text-decoration:none; }
-.button-49::after { --slice-0:inset(50% 50% 50% 50%); --slice-1:inset(80% -6px 0 0); --slice-2:inset(50% -6px 30% 0); --slice-3:inset(10% -6px 85% 0); --slice-4:inset(40% -6px 43% 0); --slice-5:inset(80% -6px 5% 0); content:attr(data-glitch); display:block; position:absolute; inset:0; padding:0 20px; background:linear-gradient(45deg,transparent 3%,var(--paper) 3%,var(--paper) 5%,var(--orange) 5%); color:var(--white); text-shadow:-3px -3px 0 var(--ink),3px 3px 0 #ffc3a7; clip-path:var(--slice-0); }
+.button-49,.button-49::after { box-sizing:border-box; width:245px; height:58px; line-height:1; font-size:clamp(11px,3.4vw,14px); font-family:"DM Sans",sans-serif; font-weight:900; white-space:nowrap; background:linear-gradient(45deg,transparent 5%,var(--ink) 5%); border:0; color:var(--white); letter-spacing:.02em; box-shadow:6px 0 0 var(--orange); outline:transparent; position:relative; user-select:none; -webkit-user-select:none; touch-action:manipulation; }
+.button-49 { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:0 20px; text-decoration:none; }
+.button-49::after { --slice-0:inset(50% 50% 50% 50%); --slice-1:inset(80% -6px 0 0); --slice-2:inset(50% -6px 30% 0); --slice-3:inset(10% -6px 85% 0); --slice-4:inset(40% -6px 43% 0); --slice-5:inset(80% -6px 5% 0); content:attr(data-glitch); display:flex;align-items:center; position:absolute; inset:0; padding:0 20px; background:linear-gradient(45deg,transparent 3%,var(--paper) 3%,var(--paper) 5%,var(--orange) 5%); color:var(--white); text-shadow:-3px -3px 0 var(--ink),3px 3px 0 #ffc3a7; clip-path:var(--slice-0); }
 .button-49:hover::after { animation:sketch-glitch 1s steps(2,end); }
 .button-49:focus-visible { outline:3px solid var(--orange); outline-offset:7px; }
 @keyframes sketch-glitch { 0%{clip-path:var(--slice-1);transform:translate(-20px,-10px)} 10%{clip-path:var(--slice-3);transform:translate(10px,10px)} 20%{clip-path:var(--slice-1);transform:translate(-10px,10px)} 30%{clip-path:var(--slice-3);transform:translate(0,5px)} 40%{clip-path:var(--slice-2);transform:translate(-5px,0)} 50%{clip-path:var(--slice-3);transform:translate(5px,0)} 60%{clip-path:var(--slice-4);transform:translate(5px,10px)} 70%{clip-path:var(--slice-2);transform:translate(-10px,10px)} 80%{clip-path:var(--slice-5);transform:translate(20px,-10px)} 90%{clip-path:var(--slice-1);transform:translate(-10px,0)} 100%{clip-path:var(--slice-1);transform:translate(0)} }
@@ -294,7 +294,7 @@ header .nav-account:hover { background:white;border-color:var(--ink);transform:t
   .mobile-dock button>span { font-size:18px; }
   .mobile-dock b { right:5px; }
   .hero { min-height:calc(100svh - 68px); }
-  .hero-actions .button-49 { width:min(245px,calc(100vw - 44px)); }
+  .hero-actions .button-49 { width:min(245px,100%); }
   .project-intro { min-height:calc(100svh - 70px);align-content:center; }
   .story-card { padding-bottom:112px; }
   .story-object { width:min(34svh,68vw);max-width:310px; }
@@ -317,8 +317,8 @@ header .nav-account:hover { background:white;border-color:var(--ink);transform:t
   .hero-copy h1 { font-size:clamp(40px,12vw,50px); }
   .hero-lede { font-size:15px;line-height:1.5; }
   .hero-actions { margin-top:24px; }
-  .hero-actions .button-49 { height:54px;line-height:54px; }
-  .hero-actions .button-49::after { height:54px;line-height:54px; }
+  .hero-actions .button-49 { height:54px;padding-inline:16px; }
+  .hero-actions .button-49::after { height:54px;padding-inline:16px; }
   .button-55 { font-size:13px; }
   .story-topline { top:18px; }
   .story-card { grid-template-rows:minmax(155px,.72fr) 1.28fr;padding:62px 18px 108px; }
