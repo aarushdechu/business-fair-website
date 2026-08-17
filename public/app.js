@@ -29,6 +29,8 @@ let projectTaps=0;
 let logoTaps=0;
 let lastCustomerOrderNumber='';
 let mobileMenuTimer;
+let googleScriptPromise;
+let googleSetupRunning=false;
 
 const $ = (selector, root=document) => root.querySelector(selector);
 const $$ = (selector, root=document) => [...root.querySelectorAll(selector)];
@@ -197,6 +199,7 @@ function openAccount() {
   $('#accountOverlay').hidden=false;
   document.body.style.overflow='hidden';
   if(state.user&&!state.user.isAdmin) loadMyOrders();
+  if(!state.user&&state.googleEnabled&&!$('#googleSignInButton').children.length)setupGoogleSignIn();
 }
 function closeAccount() { $('#accountOverlay').hidden=true;document.body.style.overflow=''; }
 function renderAccount() {
@@ -224,28 +227,52 @@ async function loadMyOrders() {
     box.innerHTML=orders.map(order=>`<button class="account-order" data-account-track="${order.number}" type="button"><strong>#${order.number}</strong><span>${order.items.map(id=>productById(id)?.name).filter(Boolean).join(' · ')}</span><b>${labels[order.status]}</b></button>`).join('');
   } catch(error) { box.innerHTML=`<p class="account-empty">${escapeHtml(error.message)}</p>`; }
 }
+function setGoogleSignInStatus(message,showRetry=false) {
+  $('#googleSignInMessage').textContent=message;
+  $('#retryGoogleSignIn').hidden=!showRetry;
+}
 function loadGoogleScript() {
   if(window.google?.accounts?.id)return Promise.resolve();
-  return new Promise((resolve,reject)=>{
-    const script=document.createElement('script');script.src='https://accounts.google.com/gsi/client';script.async=true;script.defer=true;
-    script.onload=resolve;script.onerror=()=>reject(new Error('Google sign-in could not load.'));
+  if(googleScriptPromise)return googleScriptPromise;
+  googleScriptPromise=new Promise((resolve,reject)=>{
+    const script=document.createElement('script');script.id='googleIdentityScript';script.src='https://accounts.google.com/gsi/client';script.async=true;script.defer=true;
+    const fail=()=>{script.remove();googleScriptPromise=null;reject(new Error('Google sign-in could not load.'));};
+    script.onerror=fail;
+    script.onload=()=>{
+      const started=Date.now();
+      const check=()=>{
+        if(window.google?.accounts?.id)return resolve();
+        if(Date.now()-started>3000)return fail();
+        setTimeout(check,50);
+      };
+      check();
+    };
     document.head.appendChild(script);
   });
+  return googleScriptPromise;
 }
 async function setupGoogleSignIn() {
+  if(googleSetupRunning)return;
+  googleSetupRunning=true;
+  setGoogleSignInStatus('Checking sign-in availability…');
   try {
     const config=await api('/config');state.googleEnabled=Boolean(config.googleClientId);
     try { const session=await api('/auth/me');state.user=session.user; } catch(error) { if(error.status!==401)throw error; }
     renderAccount();
-    if(!state.googleEnabled) { $('#googleSignInNote').textContent='Google sign-in needs a client ID in Render before it can appear here.';return; }
+    if(!state.googleEnabled) { setGoogleSignInStatus('Google sign-in needs a client ID in Render before it can appear here.');return; }
     await loadGoogleScript();
     google.accounts.id.initialize({client_id:config.googleClientId,callback:async response=>{
       try { const session=await api('/auth/google',{method:'POST',body:JSON.stringify({credential:response.credential})});state.user=session.user;renderAccount();if(!state.user.isAdmin)loadMyOrders();toast(`Signed in as ${state.user.name}`); }
       catch(error) { toast(error.message); }
     }});
-    google.accounts.id.renderButton($('#googleSignInButton'),{theme:'filled_black',size:'large',shape:'rectangular',text:'signin_with',logo_alignment:'left',width:Math.min(360,window.innerWidth-72)});
-    $('#googleSignInNote').textContent='We only use your name and email to match your fair orders.';
-  } catch(error) { $('#googleSignInNote').textContent='Sign-in is temporarily unavailable. Order-number tracking still works.'; }
+    const button=$('#googleSignInButton');button.replaceChildren();
+    google.accounts.id.renderButton(button,{theme:'filled_black',size:'large',shape:'rectangular',text:'signin_with',logo_alignment:'left',width:Math.min(360,window.innerWidth-72)});
+    if(!button.children.length)throw new Error('Google did not render its sign-in button.');
+    setGoogleSignInStatus('We only use your name and email to match your fair orders.');
+  } catch(error) {
+    console.warn('Google sign-in setup failed:',error);
+    setGoogleSignInStatus('Google sign-in was blocked or could not load. Check content blockers, then retry.',true);
+  } finally { googleSetupRunning=false; }
 }
 async function signOut() {
   try { await api('/auth/logout',{method:'POST'}); } catch (_) {}
@@ -462,6 +489,7 @@ $('#caseButton').addEventListener('click',openDrawer); $('#bottomPicksBtn').addE
 $('#mobileMenuToggle').addEventListener('click',toggleMobileMenu);
 $('#mobilePicksBtn').addEventListener('click',()=>{closeMobileMenu();openDrawer();}); $('#mobileTrackBtn').addEventListener('click',()=>{closeMobileMenu();openTracking();});
 $('#mobileAccountBtn').addEventListener('click',()=>{closeMobileMenu();openAccount();});$('#accountNavBtn').addEventListener('click',openAccount);$('#closeAccount').addEventListener('click',closeAccount);$('#accountOverlay').addEventListener('click',e=>{if(e.target===$('#accountOverlay'))closeAccount();});$('#accountLogout').addEventListener('click',signOut);
+$('#retryGoogleSignIn').addEventListener('click',setupGoogleSignIn);
 $('#mobileAdminBtn').addEventListener('click',()=>{closeMobileMenu(true);showStaff();});
 $('#accountAdminBtn').addEventListener('click',()=>{ closeAccount();showStaff(); });
 $('#staffNavBtn').addEventListener('click',showStaff); $('#backStoreBtn').addEventListener('click',showStore);

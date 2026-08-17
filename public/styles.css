@@ -266,6 +266,8 @@ header .nav-account:hover { background:white;border-color:var(--ink);transform:t
 .account-card h2 { margin:0 0 24px;font-size:clamp(42px,6vw,65px);line-height:.95;letter-spacing:-.06em; }
 .account-card>div>p { color:#635e55;line-height:1.55; }
 .account-note { font-size:12px;margin:15px 0 0; }
+.account-note button { margin:9px 0 0;padding:7px 10px;border:1px solid var(--ink);background:transparent;color:var(--ink);font-size:11px;font-weight:900;cursor:pointer; }
+.account-note button:hover,.account-note button:focus-visible { background:var(--orange);color:white; }
 .google-glitch-shell { --google-blue:#4285f4;--google-red:#ea4335;--google-yellow:#fbbc05;--google-green:#34a853;position:relative;width:min(380px,100%);min-height:58px;margin-top:20px;padding:5px;background:#131314;box-shadow:5px 0 0 var(--google-blue),-5px 0 0 var(--google-red),0 5px 0 var(--google-yellow);isolation:isolate;overflow:hidden;clip-path:polygon(3% 0,100% 0,100% 88%,96% 100%,0 100%,0 12%); }
 .google-glitch-shell::before { content:"";position:absolute;z-index:1;inset:0;background:linear-gradient(90deg,var(--google-blue) 0 25%,var(--google-red) 25% 50%,var(--google-yellow) 50% 75%,var(--google-green) 75%);transform:translateY(calc(100% - 4px));transition:transform .22s ease;pointer-events:none; }
 .google-glitch-shell::after { content:attr(data-glitch);position:absolute;z-index:4;inset:5px;display:grid;place-items:center;padding:0 18px;background:linear-gradient(90deg,var(--google-blue),var(--google-red) 38%,var(--google-yellow) 68%,var(--google-green));color:white;font-size:13px;font-weight:900;letter-spacing:.1em;text-shadow:-2px 0 #111,2px 0 #111;clip-path:inset(50% 0 50% 0);pointer-events:none; }
