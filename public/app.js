@@ -231,6 +231,10 @@ function setGoogleSignInStatus(message,showRetry=false) {
   $('#googleSignInMessage').textContent=message;
   $('#retryGoogleSignIn').hidden=!showRetry;
 }
+function setGoogleButtonReady(ready) {
+  $('.google-glitch-shell').classList.toggle('is-ready',ready);
+  $('#googleSignInFallback').hidden=ready;
+}
 function loadGoogleScript() {
   if(window.google?.accounts?.id)return Promise.resolve();
   if(googleScriptPromise)return googleScriptPromise;
@@ -254,6 +258,7 @@ function loadGoogleScript() {
 async function setupGoogleSignIn() {
   if(googleSetupRunning)return;
   googleSetupRunning=true;
+  setGoogleButtonReady(false);
   setGoogleSignInStatus('Checking sign-in availability…');
   try {
     const config=await api('/config');state.googleEnabled=Boolean(config.googleClientId);
@@ -268,6 +273,7 @@ async function setupGoogleSignIn() {
     const button=$('#googleSignInButton');button.replaceChildren();
     google.accounts.id.renderButton(button,{theme:'filled_black',size:'large',shape:'rectangular',text:'signin_with',logo_alignment:'left',width:Math.min(360,window.innerWidth-72)});
     if(!button.children.length)throw new Error('Google did not render its sign-in button.');
+    setGoogleButtonReady(true);
     setGoogleSignInStatus('We only use your name and email to match your fair orders.');
   } catch(error) {
     console.warn('Google sign-in setup failed:',error);
@@ -490,6 +496,7 @@ $('#mobileMenuToggle').addEventListener('click',toggleMobileMenu);
 $('#mobilePicksBtn').addEventListener('click',()=>{closeMobileMenu();openDrawer();}); $('#mobileTrackBtn').addEventListener('click',()=>{closeMobileMenu();openTracking();});
 $('#mobileAccountBtn').addEventListener('click',()=>{closeMobileMenu();openAccount();});$('#accountNavBtn').addEventListener('click',openAccount);$('#closeAccount').addEventListener('click',closeAccount);$('#accountOverlay').addEventListener('click',e=>{if(e.target===$('#accountOverlay'))closeAccount();});$('#accountLogout').addEventListener('click',signOut);
 $('#retryGoogleSignIn').addEventListener('click',setupGoogleSignIn);
+$('#googleSignInFallback').addEventListener('click',setupGoogleSignIn);
 $('#mobileAdminBtn').addEventListener('click',()=>{closeMobileMenu(true);showStaff();});
 $('#accountAdminBtn').addEventListener('click',()=>{ closeAccount();showStaff(); });
 $('#staffNavBtn').addEventListener('click',showStaff); $('#backStoreBtn').addEventListener('click',showStore);
